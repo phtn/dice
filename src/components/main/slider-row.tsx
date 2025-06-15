@@ -7,20 +7,38 @@ import { Slider } from "../ui/slider";
 import Image from "next/image";
 import { useRNGCtx } from "@/app/ctx/rng-ctx";
 import { cn } from "@/lib/utils";
-import { useBetCtx } from "@/app/ctx/b-ctx";
+import { useBetCtx } from "@/app/ctx/bet-ctx";
 
 export const SliderRow = () => {
   const { result } = useRNGCtx();
-  const { x, setXID } = useBetCtx();
+  const { setMult } = useBetCtx();
 
   const [prevRandomNumber, setPrevRandomNumber] = useState(0); // Track previous value
   const [isAnimating, setIsAnimating] = useState(false);
   const [isFirstRun, setIsFirstRun] = useState(true);
+  const [tilt, setTilt] = useState(0);
+  const [sliderValue, setSliderValue] = useState<number[]>([50]);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate tilt based on movement direction and distance
+  const calculateTilt = useCallback(() => {
+    if (isFirstRun) return 0;
+
+    const distance = Math.abs(result - prevRandomNumber);
+    const direction = result > prevRandomNumber ? 1 : -1;
+
+    const maxTilt = 18; // Increased max tilt for more variance
+
+    // Quadratic curve for tilt calculation:
+    const tiltAmount = maxTilt * Math.pow(distance / 100, 2); // Non-linear relationship
+
+    return direction * -tiltAmount;
+  }, [isFirstRun, result, prevRandomNumber]);
 
   useEffect(() => {
     let delay: NodeJS.Timeout;
     if (result) {
+      setTilt(calculateTilt());
       setPrevRandomNumber(result);
       // Generate new random number
       setIsAnimating(true);
@@ -32,34 +50,22 @@ export const SliderRow = () => {
         setIsAnimating(false);
       }, 500);
     }
+
     // Reset animation state after animation completes
 
     return () => clearTimeout(delay);
-  }, [result, isFirstRun]);
-
-  // Calculate tilt based on movement direction and distance
-  const calculateTilt = useCallback(() => {
-    if (isFirstRun) return 0;
-
-    const distance = Math.abs(result - prevRandomNumber);
-    const direction = result > prevRandomNumber ? 1 : -1;
-
-    const maxTilt = 12; // Increased max tilt for more variance
-
-    // Quadratic curve for tilt calculation:
-    const tiltAmount = maxTilt * Math.pow(distance / 100, 2); // Non-linear relationship
-    return direction * -tiltAmount;
-  }, [isFirstRun, result, prevRandomNumber]);
+  }, [result, isFirstRun, calculateTilt]);
 
   const handleSliderChange = useCallback(
-    (values: number[]) => {
-      setXID(values[0]);
+    (value: number[]) => {
+      setSliderValue(value);
+      setMult(value[0]);
     },
-    [setXID],
+    [setMult],
   );
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 rounded-xl bg-black text-white">
+    <div className="w-full max-w-3xl mx-auto px-6 py-4  rounded-xl text-white">
       <div className="relative w-full mb-12" ref={sliderContainerRef}>
         {/* Random Number Badge */}
 
@@ -72,7 +78,7 @@ export const SliderRow = () => {
           }}
           animate={{
             left: `${result.toFixed(0)}%`,
-            rotate: isAnimating ? `${calculateTilt()}deg` : "0deg",
+            rotate: isAnimating ? `${tilt}deg` : "0deg",
           }}
           transition={{
             left: {
@@ -92,28 +98,30 @@ export const SliderRow = () => {
             top: "-84px", // Adjusted vertical position
             transformOrigin: "bottom center", // Set pivot point to bottom-center
           }}
-          className={cn("absolute transform -translate-x-1/2", {
+          className={cn("absolute transform-all -translate-x-1/2", {
             "opacity-0": isFirstRun,
           })}
         >
-          <div className="bg-white rotate-[30deg] text-black font-bold text-xl clip-hexagon flex items-center justify-center">
-            <div className="-rotate-[30deg]">{result.toFixed(2)}</div>
+          <div className="bg-white rotate-[30deg] text-black font-semibold text-xl clip-hexagon flex items-center justify-center">
+            <div className="-rotate-[30deg] tracking-tighter">
+              {result.toFixed(2)}
+            </div>
           </div>
         </motion.div>
 
         {/* Slider Position Indicator */}
         <motion.div
-          className="absolute -top-16 transform -translate-x-1/2 text-zinc-300 px-2 py-1 rounded-md font-medium text-sm"
-          animate={{ left: `${x}%` }}
+          className="absolute -top-12 font-space transform -translate-x-1/2 text-zinc-300 px-2 py-1 rounded-md font-medium text-sm"
+          animate={{ left: `${sliderValue[0]}%` }}
         >
-          {x}
+          {sliderValue[0]}
         </motion.div>
 
         {/* Slider Background */}
         <div
-          className="absolute -top-2 inset-0 rounded-full"
+          className="absolute -top-1 inset-0 rounded-full"
           style={{
-            background: `linear-gradient(to right, #f87171 0%, #f87171 ${x}%, #4ade80 ${x}%, #4ade80 100%)`,
+            background: `linear-gradient(to right, #f87171 0%, #f87171 ${sliderValue[0]}%, #4ade80 ${sliderValue[0]}%, #4ade80 100%)`,
           }}
         />
 
@@ -122,12 +130,13 @@ export const SliderRow = () => {
           min={2}
           step={1}
           max={99.99}
-          value={[x]}
+          value={sliderValue}
           className="z-10 relative"
           onValueChange={handleSliderChange}
         />
+
         <div
-          style={{ left: `${x}%` }}
+          style={{ left: `${sliderValue[0]}%` }}
           className="absolute -ml-[12px] top-4 pointer-events-none select-none"
         >
           <Image
@@ -140,10 +149,10 @@ export const SliderRow = () => {
         </div>
       </div>
 
-      <div className="flex justify-between pointer-events-none select-none text-gray-300 mb-8">
+      <div className="flex justify-between pointer-events-none select-none text-zinc-400/60">
         <span className="flex w-full">0</span>
         <span className="flex w-full">25</span>
-        <div className="px-2 flex border justify-center rounded-lg border-zinc-500">
+        <div className="px-2 flex border justify-center rounded-lg border-zinc-400/30">
           <span>50</span>
         </div>
         <span className="w-full flex justify-end">75</span>

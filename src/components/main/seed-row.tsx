@@ -7,7 +7,7 @@ export const SeedRow = () => {
   const { seedPair, generateSeeds } = useRNGCtx();
 
   return (
-    <div className="flex w-full p-4 h-fit rounded-xl bg-zinc-900/50 row-start-2 items-start justify-between">
+    <div className="pt-2 flex w-full h-fit rounded-xl bg-gradient-to-br from-zinc-900/50 via-zinc-900/30 to-zinc-900/10 row-start-2 items-start justify-between">
       <SeedValues {...seedPair} />
       <GenerateNewSeed generateFn={generateSeeds} />
     </div>
@@ -16,34 +16,32 @@ export const SeedRow = () => {
 
 const SeedValues = ({ cS, sS, nonce }: SeedPair) => {
   return (
-    <ul className="list-inside text-sm/6 space-y-3 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
+    <ul className="list-inside text-sm/6 space-y-0.5 text-center sm:text-left">
       <li className="tracking-[-.01em] space-x-4 flex">
         <div className="w-16 text-right">
           <code className="bg-black/[.05] text-zinc-400 dark:bg-white/[.06] tracking-wide text-xs px-1.5 py-0.5 rounded-md font-[family-name:var(--font-geist-mono)] font-semibold">
             client
           </code>
         </div>
-        <span className="tracking-widest text-teal-200/90 font-semibold">
-          {cS}
-        </span>
+        <span className="tracking-widest text-sky-300/90 font-space">{cS}</span>
       </li>
       <li className="tracking-[-.01em] space-x-4 flex">
         <div className="w-16 text-right">
-          <code className="bg-black/[.05] text-zinc-400 dark:bg-white/[.06] tracking-wide text-xs px-1.5 py-0.5 rounded-md font-[family-name:var(--font-geist-mono)] font-semibold">
+          <code className="bg-black/[.05] text-zinc-500 dark:bg-white/[.06] tracking-wide text-xs px-1.5 py-0.5 rounded-md font-[family-name:var(--font-geist-mono)] font-semibold">
             server
           </code>
         </div>
-        <span className="tracking-widest text-indigo-200/90 font-semibold">
+        <span className="tracking-widest text-indigo-300/90 font-space">
           {sS}
         </span>
       </li>
       <li className="tracking-[-.01em] space-x-4 flex">
         <div className="w-16 text-right">
-          <code className="bg-black/[.05] text-zinc-400 dark:bg-white/[.06] tracking-wide text-xs px-1.5 py-0.5 rounded-md font-[family-name:var(--font-geist-mono)] font-semibold">
+          <code className="bg-black/[.05] text-zinc-600 dark:bg-white/[.06] tracking-wide text-xs px-1.5 py-0.5 rounded-md font-[family-name:var(--font-geist-mono)] font-semibold">
             nonce
           </code>
         </div>
-        <span className="tracking-widest text-indigo-200/80 font-semibold">
+        <span className="tracking-widest text-orange-200/80 font-space">
           {nonce}
         </span>
       </li>

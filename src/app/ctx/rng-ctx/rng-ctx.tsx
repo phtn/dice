@@ -12,8 +12,11 @@ import {
   useState,
   useCallback,
   useEffect,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import { fetchServerSeed } from "./helpers";
+import { Result } from "./types";
 
 interface RNGProviderProps {
   children: ReactNode;
@@ -27,8 +30,13 @@ interface RNGCtxValues {
   spN: number;
   generateSeeds: VoidFunction;
   setSeedPair: () => (pair: SeedPair) => Promise<void>;
-  rollDice: (params: RandWithPrecise) => Promise<void>;
+  rollDice: (
+    params: RandWithPrecise,
+    callback: (result: number) => void,
+  ) => Promise<void>;
   seedPair: SeedPair;
+  results: Result[];
+  setResults: Dispatch<SetStateAction<Result[]>>;
 }
 
 const RNGCtx = createContext<RNGCtxValues | null>(null);
@@ -39,6 +47,7 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
   const [nonce, setNonce] = useState<number>(0);
 
   const [result, setResult] = useState<number>(0);
+  const [results, setResults] = useState<Result[]>([]);
   const [spN, setSPN] = useState<number>(0);
 
   const generateSeeds = useCallback(() => {
@@ -51,15 +60,19 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
   const setSeedPair = useCallback(asyncFn(getRandSeedPair, setSPN), []);
   const seedPair = useMemo(() => ({ cS, sS, nonce }), [cS, sS, nonce]);
 
-  const rollDice = useCallback(async (params: RandWithPrecise) => {
-    const n = await getRandWithPrecision(
-      params.seedPair,
-      params.range?.[0] ?? 0,
-      params.range?.[1] ?? 99.99,
-    );
-    setResult(n);
-    setNonce((prev) => prev++);
-  }, []);
+  const rollDice = useCallback(
+    async (params: RandWithPrecise, callback: (result: number) => void) => {
+      const n = await getRandWithPrecision(
+        params.seedPair,
+        params.range?.[0] ?? 0,
+        params.range?.[1] ?? 99.99,
+      );
+      setResult(n);
+      setNonce((prev) => prev++);
+      callback(n); // Execute the callback with the result
+    },
+    [],
+  );
 
   useEffect(() => {
     if (sS === "") {
@@ -75,8 +88,10 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
       spN,
       nonce,
       result,
+      results,
       rollDice,
       seedPair,
+      setResults,
       setSeedPair,
       generateSeeds,
     }),
@@ -86,8 +101,10 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
       spN,
       nonce,
       result,
+      results,
       rollDice,
       seedPair,
+      setResults,
       setSeedPair,
       generateSeeds,
     ],
