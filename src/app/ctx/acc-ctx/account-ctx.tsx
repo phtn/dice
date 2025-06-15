@@ -40,7 +40,6 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
 
   const getBalance = useCallback(async () => {
     const bal = await fetchBalance();
-    console.log("ACC-CTX", bal.amount);
     setBalance(bal);
   }, []);
 

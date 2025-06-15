@@ -1,7 +1,7 @@
 import { getAccount } from "@/app/actions";
 import { Balance, UserAccount } from "./types";
 
-export const fetchBalance = async (): Promise<Balance> => {
+export const fetchBalance = async () => {
   const account = await getAccount();
   const res = await fetch("/api/account/balance", {
     method: "POST",
@@ -13,7 +13,6 @@ export const fetchBalance = async (): Promise<Balance> => {
     body: JSON.stringify(account),
   });
   const data = (await res.json()) as UserAccount;
-  console.log("FETCH HELPER", data);
   return data.balance;
 };
 

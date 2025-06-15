@@ -26,7 +26,7 @@ export const Content = () => {
 };
 
 const Container = ({ children }: PropsWithChildren) => (
-  <main className="container mx-auto grid grid-rows-[30px_1fr_1fr] py-20 items-center justify-items-center min-h-screen p-4 gap-6 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+  <main className="md:container mx-auto grid grid-rows py-2 items-center justify-items-center min-h-screen p-4 gap-6 font-[family-name:var(--font-geist-sans)]">
     {children}
   </main>
 );

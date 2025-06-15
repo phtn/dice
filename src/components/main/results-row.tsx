@@ -54,7 +54,7 @@ const ResultItem = (item: IResultItem) => (
   <div
     className={cn(
       "text-zinc-300 h-8 font-semibold tracking-tighter flex items-center bg-zinc-600/40 w-14 justify-center rounded-md",
-      { "bg-green-600 text-white font-bold": item.type === "win" },
+      { "bg-green-600 text-white font-semibold": item.type === "win" },
     )}
   >
     {item.value?.toFixed(2) ?? 0}

@@ -102,8 +102,22 @@ export const SliderRow = () => {
             "opacity-0": isFirstRun,
           })}
         >
-          <div className="bg-white rotate-[30deg] text-black font-semibold text-xl clip-hexagon flex items-center justify-center">
-            <div className="-rotate-[30deg] tracking-tighter">
+          <div className="bg-white rotate-[30deg] text-black font-semibold clip-hexagon flex items-center justify-center">
+            <div
+              className={cn(
+                "clip-hexagon transition-all duration-1000 rotate-0 ease-in bg-zinc-300 absolute scale-95",
+                {
+                  "bg-green-500/80 rotate-[510deg] blur-lg":
+                    result > sliderValue[0],
+                },
+              )}
+            />
+            <div className="clip-hexagon bg-zinc-600 absolute scale-75" />
+            <div
+              className={cn("-rotate-[30deg] text-pink-50 font-space", {
+                "text-white": result > sliderValue[0],
+              })}
+            >
               {result.toFixed(2)}
             </div>
           </div>
