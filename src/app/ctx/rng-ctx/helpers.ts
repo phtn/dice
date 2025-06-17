@@ -8,6 +8,5 @@ export const fetchServerSeed = async (): Promise<string> => {
     },
   });
   const data = (await res.json()) as ServerSeed;
-  console.log(data);
   return data.sS ?? "";
 };

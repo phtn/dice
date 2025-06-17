@@ -70,7 +70,7 @@ function Slider({
     const thumb = (
       <Thumb
         data-slot="slider-thumb"
-        className="bg-transparent ring-ring/50 block size-20 shrink-0 rounded-full shadow-sm transition-[color,box-shadow] outline-none hover:ring-0 focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50"
+        className="bg-transparent cursor-pointer ring-0 block size-24 shrink-0 rounded-full shadow-sm transition-[color,box-shadow] outline-none hover:ring-0 focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50"
         onPointerDown={handlePointerDown}
       />
     );

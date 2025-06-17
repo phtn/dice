@@ -2,19 +2,28 @@
 
 import { useBetCtx } from "@/app/ctx/bet-ctx";
 import { useRNGCtx } from "@/app/ctx/rng-ctx";
-import Image from "next/image";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { HyperList } from "../hyper/list";
 import { useAccountCtx } from "@/app/ctx/acc-ctx/account-ctx";
 import { generateId } from "ai";
 import { setAccount } from "@/app/actions";
+import { Icon } from "@/lib/icons";
+import { cn } from "@/lib/utils";
+import { AUTOPLAYS, BetAmountMulticand } from "@/app/ctx/bet-ctx/bet-ctx";
 
 export const ControlRow = () => {
   const { generateSeeds, rollDice, seedPair, setResults, result } = useRNGCtx();
-  const { setBet, betAmount, multiplier, x } = useBetCtx();
+  const {
+    setBet,
+    betAmount,
+    multiplier,
+    x,
+    autoplayCount,
+    isAutoplaying,
+    setAutoplayCount,
+    setIsAutoplaying,
+  } = useBetCtx();
   const { balance, getBalance, updateBalance } = useAccountCtx();
-  const [playCount, setPlayCount] = useState(10);
-  const [isAutoplaying, setIsAutoplaying] = useState(false);
   // const [bal, setBal] = useState<number | undefined>(balance?.amount);
 
   const handleDiceRoll = useCallback(async () => {
@@ -49,8 +58,8 @@ export const ControlRow = () => {
   ]);
 
   const handleSetBet = useCallback(
-    (x: number) => () => {
-      setBet(x);
+    (type: BetAmountMulticand) => () => {
+      setBet(type);
       getBalance();
     },
     [setBet, getBalance],
@@ -65,23 +74,24 @@ export const ControlRow = () => {
       clearTimeout(timerRef.current);
       timerRef.current = undefined;
       setIsAutoplaying(false);
+      setAutoplayCount(0);
       return;
     }
 
     // Start autoplaying
     setIsAutoplaying(true);
-    setPlayCount(10);
+    setAutoplayCount(AUTOPLAYS);
 
     const autoplay = () => {
       if (timerRef.current !== undefined) {
         clearTimeout(timerRef.current);
       }
-      setPlayCount((prevCount) => {
+      setAutoplayCount((prevCount) => {
         if (prevCount >= 1) {
           rollDiceRef.current?.click();
           // Clear any existing timeout before setting a new one
 
-          timerRef.current = +setTimeout(autoplay, 750);
+          timerRef.current = +setTimeout(autoplay, 1000);
           return prevCount - 1;
         } else {
           // Stop autoplaying
@@ -96,21 +106,21 @@ export const ControlRow = () => {
     };
 
     // Start the first iteration with a delay instead of immediately
-    timerRef.current = +setTimeout(autoplay, 750);
-  }, []); // Remove playCount from dependencies since we use the updater function
+    timerRef.current = +setTimeout(autoplay, 1000);
+  }, [setIsAutoplaying, setAutoplayCount]); // Remove playCount from dependencies since we use the updater function
 
   const controls = useMemo(
     () =>
       [
         {
-          fn: handleSetBet(0),
+          fn: handleSetBet("zero"),
           label: 0,
         },
-        { fn: handleSetBet(0.5), label: "1/2" },
-        { fn: handleSetBet(2), label: "2x" },
-        { fn: handleSetBet(balance?.amount ?? 0), label: "max" },
+        { fn: handleSetBet("half"), label: "1/2" },
+        { fn: handleSetBet("2x"), label: "2x" },
+        { fn: handleSetBet("max"), label: "max" },
       ] as IButtonItem[],
-    [handleSetBet, balance],
+    [handleSetBet],
   );
 
   const handleSetAccount = useCallback(async () => {
@@ -126,11 +136,11 @@ export const ControlRow = () => {
       <div className="h-24 flex items-center space-x-4 justify-evenly w-full">
         <button
           onClick={handleSetAccount}
-          className="rounded-3xl md:w-36 w-24 transition-colors flex flex-col items-start justify-center text-sky-300 gap-2 h-16 aspect-square px-2 whitespace-nowrap"
+          className="rounded-3xl md:w-36 w-32 ps-4 py-3 bg-zinc-500/10 transition-colors flex flex-col items-start justify-center text-sky-100 gap-2 whitespace-nowrap"
         >
-          <span className="text-zinc-300">Balance:</span>{" "}
-          <span className="font-semibold text-lg">
-            <span className="text-zinc-300">$</span>{" "}
+          <span className="text-zinc-400 text-sm">Balance:</span>{" "}
+          <span className="font-medium text-xl tracking-tight">
+            <span className="text-zinc-300 font-normal">$</span>{" "}
             {balance?.amount?.toFixed(2)}
           </span>
         </button>
@@ -138,29 +148,67 @@ export const ControlRow = () => {
           data={controls}
           component={ButtonItem}
           direction="right"
-          container="flex overflow-hidden space-x-1"
+          itemStyle={cn({ "pointer-events-none select-none": isAutoplaying })}
+          container="flex overflow-hidden p-1 space-x-1"
         />
+      </div>
+      <div className="h-24 flex items-center space-x-4 justify-center w-full">
+        <button
+          ref={rollDiceRef}
+          onClick={handleDiceRoll}
+          className={cn(
+            "flex items-center justify-center gap-4",
+            "rounded-2xl border border-zinc-700 bg-zinc-200",
+            "cursor-pointer disabled:cursor-auto whitespace-nowrap",
+            "transition-colors text-zinc-600 font-medium text-sm",
+            "h-20 sm:h-16 px-16 sm:px-10 sm:w-auto w-64",
+          )}
+        >
+          <Icon
+            size={12}
+            className={"shrink-0 text-zinc-800"}
+            name={isAutoplaying ? "spinners-3-dots-move" : "re-up.ph"}
+          />
+          <span
+            className={cn(
+              "text-lg capitalize font-space text-zinc-800 font-bold",
+              {
+                "text-orange-500": betAmount === 0,
+                "text-sky-600": isAutoplaying,
+              },
+            )}
+          >
+            {isAutoplaying ? "autoplaying" : "play"}
+          </span>
+        </button>
         <button
           onClick={toggleAutoplay}
-          className="rounded-3xl flex-shrink-0 border border-teal-200 font-space text-sm cursor-pointer disabled:cursor-auto transition-colors flex items-center justify-center bg-teal-300/80 text-zinc-900 gap-2 hover:opacity-80 dark:hover:opacity-80 font-medium h-16 aspect-square px-2 whitespace-nowrap"
+          className={cn(
+            "flex items-center justify-between w-24 aspect-square",
+            "rounded-3xl border border-zinc-700 bg-zinc-600",
+            " cursor-pointer disabled:cursor-auto",
+            " transition-colors text-zinc-600 font-medium text-sm",
+            " h-20 sm:h-16 px-3 sm:px-10 sm:w-auto",
+            { "text-xl font-bold text-white bg-sky-500": isAutoplaying },
+          )}
         >
-          {isAutoplaying ? playCount : "auto"}
+          <Icon
+            name="tri"
+            size={16}
+            className={cn("text-sky-300 shrink-0", {
+              "text-zinc-50": isAutoplaying,
+            })}
+          />
+          <div
+            className={cn(
+              "text-lg capitalize tracking-tight leading-none font-space text-sky-400 font-bold",
+              { "text-white": isAutoplaying },
+            )}
+          >
+            {isAutoplaying ? autoplayCount : "auto"}
+          </div>
         </button>
       </div>
-      <button
-        ref={rollDiceRef}
-        onClick={handleDiceRoll}
-        className="rounded-2xl border border-solid transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-16 sm:h-12 px-16 sm:px-5 sm:w-auto whitespace-nowrap"
-      >
-        <Image
-          className="dark:invert"
-          src="/vercel.svg"
-          alt="Vercel logomark"
-          width={12}
-          height={12}
-        />
-        Roll Dice
-      </button>
     </div>
   );
 };
@@ -172,7 +220,7 @@ interface IButtonItem {
 const ButtonItem = (item: IButtonItem) => (
   <button
     onClick={item.fn}
-    className="rounded-3xl border border-solid text-sm cursor-pointer disabled:cursor-auto border-transparent transition-colors flex items-center justify-center bg-zinc-400 text-zinc-900 gap-2 hover:opacity-80 dark:hover:opacity-80 font-medium h-16 aspect-square px-2 whitespace-nowrap"
+    className="rounded-3xl border border-solid border-zinc-700 text-sm cursor-pointer disabled:cursor-auto transition-colors flex items-center justify-center text-zinc-300 gap-2 hover:opacity-80 dark:hover:opacity-80 font-medium h-16 aspect-square px-2 whitespace-nowrap"
   >
     {item.label}
   </button>

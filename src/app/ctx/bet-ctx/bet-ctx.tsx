@@ -11,33 +11,59 @@ import {
   SetStateAction,
 } from "react";
 import { quart, quartCurve } from "./helpers";
+import { useAccountCtx } from "../acc-ctx/account-ctx";
 
 interface BetProviderProps {
   children: ReactNode;
 }
-
 interface BetCtxValues {
   betAmount: number;
-  setBet: (amount: number) => void;
+  setBet: (type: BetAmountMulticand) => void;
   x: number;
   multiplier: number;
   setMult: (x: number) => void;
   setX: Dispatch<SetStateAction<number>>;
   curve: number;
+  autoplayCount: number;
+  setAutoplayCount: Dispatch<SetStateAction<number>>;
+  isAutoplaying: boolean;
+  setIsAutoplaying: Dispatch<SetStateAction<boolean>>;
 }
 
 const BetCtx = createContext<BetCtxValues | null>(null);
 
+export type BetAmountMulticand = "zero" | "half" | "2x" | "max";
+
+export const AUTOPLAYS = 100;
 const BetCtxProvider = ({ children }: BetProviderProps) => {
   const [betAmount, setBetAmount] = useState(0);
   const [multiplier, setMultiplier] = useState(2);
   const [x, setX] = useState(50);
+  const [autoplayCount, setAutoplayCount] = useState(AUTOPLAYS);
+  const [isAutoplaying, setIsAutoplaying] = useState(false);
+
+  const { balance } = useAccountCtx();
 
   const curve = useMemo(() => quartCurve(x), [x]);
 
-  const setBet = useCallback((amount: number) => {
-    setBetAmount((prev) => (amount < 1 ? amount * prev : amount + prev));
-  }, []);
+  const setBet = useCallback(
+    (type: BetAmountMulticand) => {
+      switch (type) {
+        case "half":
+          setBetAmount((prev) => (prev <= 1.99 ? 0 : prev / 2));
+          break;
+        case "2x":
+          setBetAmount((prev) => (prev === 0 ? 2 : prev * 2));
+          break;
+        case "max":
+          setBetAmount(balance?.amount ?? 0);
+          break;
+        default:
+          setBetAmount(0);
+      }
+    },
+    [balance?.amount],
+  );
 
   const setMult = useCallback((current: number) => {
     setMultiplier(quart(current));
@@ -53,8 +79,23 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
       setMult,
       betAmount,
       multiplier,
+      autoplayCount,
+      isAutoplaying,
+      setAutoplayCount,
+      setIsAutoplaying,
     }),
-    [curve, betAmount, setBet, x, multiplier, setMult],
+    [
+      curve,
+      betAmount,
+      setBet,
+      x,
+      multiplier,
+      setMult,
+      autoplayCount,
+      isAutoplaying,
+      setAutoplayCount,
+      setIsAutoplaying,
+    ],
   );
   return <BetCtx value={value}>{children}</BetCtx>;
 };
