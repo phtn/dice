@@ -1,15 +1,14 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
+  Provider,
+  Root,
   TooltipArrow,
   type TooltipContentProps,
   TooltipPortal,
   type TooltipTriggerProps,
-  Provider,
-  Root,
 } from "@radix-ui/react-tooltip";
-
-import { cn } from "@/lib/utils";
 import { type ComponentProps } from "react";
 
 function TooltipProvider({

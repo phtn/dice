@@ -1,8 +1,12 @@
 "use client";
 
 import { asyncFn } from "@/app/utils/helpers";
-import { getRandSeedPair, getRandWithPrecision } from "@/app/utils/rng";
-import { RandWithPrecise, SeedPair } from "@/app/utils/rng/types";
+import {
+  getRandomSeedPair,
+  getRandomWithPrecision,
+  RandomWithPrecise,
+  SeedPair,
+} from "use-rng";
 import { generateId } from "ai";
 import {
   createContext,
@@ -31,10 +35,10 @@ interface RNGCtxValues {
   generateSeeds: VoidFunction;
   setSeedPair: () => (pair: SeedPair) => Promise<void>;
   rollDice: (
-    params: RandWithPrecise,
+    params: RandomWithPrecise,
     callback: (result: number) => void,
   ) => Promise<void>;
-  seedPair: SeedPair;
+  seedPair: { cS: string; sS: string; nonce: number };
   results: Result[];
   setResults: Dispatch<SetStateAction<Result[]>>;
 }
@@ -57,12 +61,12 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
   }, []);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const setSeedPair = useCallback(asyncFn(getRandSeedPair, setSPN), []);
+  const setSeedPair = useCallback(asyncFn(getRandomSeedPair, setSPN), []);
   const seedPair = useMemo(() => ({ cS, sS, nonce }), [cS, sS, nonce]);
 
   const rollDice = useCallback(
-    async (params: RandWithPrecise, callback: (result: number) => void) => {
-      const n = await getRandWithPrecision(
+    async (params: RandomWithPrecise, callback: (result: number) => void) => {
+      const n = await getRandomWithPrecision(
         params.seedPair,
         params.range?.[0] ?? 0,
         params.range?.[1] ?? 99.99,

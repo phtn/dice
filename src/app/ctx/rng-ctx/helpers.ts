@@ -1,5 +1,3 @@
-import { ServerSeed } from "@/app/utils/rng/types";
-
 export const fetchServerSeed = async (): Promise<string> => {
   const res = await fetch("/api/seed", {
     method: "GET",
@@ -7,6 +5,6 @@ export const fetchServerSeed = async (): Promise<string> => {
       accept: "application/json",
     },
   });
-  const data = (await res.json()) as ServerSeed;
+  const data = (await res.json()) as { sS: string };
   return data.sS ?? "";
 };

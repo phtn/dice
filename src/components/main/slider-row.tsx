@@ -68,10 +68,9 @@ export const SliderRow = () => {
     [result],
   );
   return (
-    <div className="w-full max-w-3xl mx-auto mt-28 px-6 py-6 border border-zinc-700 rounded-xl text-white">
-      <div className="relative w-full mb-12" ref={sliderContainerRef}>
+    <div className="w-[95vw] mx-auto md:w-3xl mt-28 md:px-6 py-6 border border-zinc-700 rounded-xl text-white">
+      <div className="relative w-auto mb-12" ref={sliderContainerRef}>
         {/* Random Number Badge */}
-
         <motion.div
           id="hex-result"
           key={`random-${result}`}
@@ -122,17 +121,17 @@ export const SliderRow = () => {
           >
             <div
               className={cn(
-                "clip-hexagon rotate-0 ease-in bg-zinc-300 absolute scale-95",
+                "clip-hexagon rotate-0 ease-in bg-zinc-300 absolute scale-[99%]",
                 {
                   "bg-blink-green rotate-[30deg] duration-[5s]":
                     result > sliderValue[0],
                 },
               )}
             />
-            <div className="clip-hexagon bg-zinc-800 absolute scale-[80%]" />
+            <div className="clip-hexagon bg-zinc-800 absolute scale-[90%]" />
             <div
               className={cn(
-                "-rotate-[30deg] font-medium font-mono text-lg text-zinc-300 -tracking-widest",
+                "-rotate-[30deg] font-bold font-sans text-lg text-zinc-300 tracking-tighter",
                 {
                   "text-white": result > sliderValue[0],
                 },
@@ -184,11 +183,11 @@ export const SliderRow = () => {
         </div>
       </div>
 
-      <div className="flex justify-between pointer-events-none select-none text-zinc-400/60">
+      <div className="flex justify-between pointer-events-none select-none text-zinc-400/80">
         <span className="flex w-full">0</span>
         <span className="flex w-full">25</span>
-        <div className="px-2 flex border justify-center rounded-lg border-zinc-400/30">
-          <span>50</span>
+        <div className="px-1.5 flex border justify-center rounded-md border-zinc-400/30">
+          <span className="text-zinc-400">50</span>
         </div>
         <span className="w-full flex justify-end">75</span>
         <span className="w-full flex justify-end">100</span>

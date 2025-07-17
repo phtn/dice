@@ -27,8 +27,8 @@ interface IResultItem {
 const ResultItem = (item: IResultItem) => (
   <div
     className={cn(
-      "text-zinc-400 h-8 font-semibold tracking-tighter flex items-center bg-zinc-800 w-14 justify-center rounded-md",
-      { "text-blink-green font-medium bg-blink-green/10": item.type === "win" },
+      "text-zinc-50 text-[14px] h-8 font-bold font-space tracking-tight flex items-center bg-zinc-600 w-16 justify-center rounded-lg",
+      { "text-white font-bold bg-green-500/80": item.type === "win" },
     )}
   >
     {item.value?.toFixed(2) ?? 0}

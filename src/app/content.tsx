@@ -27,7 +27,7 @@ export const Content = () => {
 };
 
 const Container = ({ children }: PropsWithChildren) => (
-  <main className="md:container mx-auto overflow-x-hidden grid grid-rows py-2 items-start justify-items-center min-h-screen p-4 gap-6 font-[family-name:var(--font-geist-sans)]">
+  <main className="md:container mx-auto overflow-x-hidden grid grid-rows py-2 items-start justify-items-center min-h-[95vh] p-4 gap-6 font-[family-name:var(--font-geist-sans)]">
     {children}
   </main>
 );

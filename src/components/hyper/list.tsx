@@ -1,6 +1,6 @@
 import { type ClassName } from "@/app/types";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence, type Variants } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { type FC, memo, type ReactNode, useCallback, useMemo } from "react";
 
 interface HyperListProps<T> {

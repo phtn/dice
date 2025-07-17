@@ -31,19 +31,28 @@ export const ControlRow = () => {
     const currentMultiplier = multiplier; // Capture current multiplier
     // const currentX = x; // Capture current x
 
-    rollDice({ seedPair }, (r = result) => {
-      generateSeeds();
-      const balAmount =
-        balance &&
-        balance.amount +
-          currentBetAmount * (r < x ? -1 : currentMultiplier) -
-          (r < x ? 0 : currentBetAmount);
-      updateBalance(balAmount ?? 0 - currentBetAmount);
-      setResults((prev) => [
-        ...prev,
-        { value: r, type: r > x ? "win" : "lose" },
-      ]);
-    });
+    rollDice(
+      {
+        seedPair: {
+          clientSeed: seedPair.cS,
+          serverSeed: seedPair.sS,
+          nonce: seedPair.nonce,
+        },
+      },
+      (r = result) => {
+        generateSeeds();
+        const balAmount =
+          balance &&
+          balance.amount +
+            currentBetAmount * (r < x ? -1 : currentMultiplier) -
+            (r < x ? 0 : currentBetAmount);
+        updateBalance(balAmount ?? 0 - currentBetAmount);
+        setResults((prev) => [
+          ...prev,
+          { value: r, type: r > x ? "win" : "lose" },
+        ]);
+      },
+    );
   }, [
     x,
     result,
@@ -185,17 +194,17 @@ export const ControlRow = () => {
           onClick={toggleAutoplay}
           className={cn(
             "flex items-center justify-between w-24 aspect-square",
-            "rounded-3xl border border-zinc-700 bg-zinc-600",
-            " cursor-pointer disabled:cursor-auto",
-            " transition-colors text-zinc-600 font-medium text-sm",
-            " h-20 sm:h-16 px-3 sm:px-10 sm:w-auto",
-            { "text-xl font-bold text-white bg-sky-500": isAutoplaying },
+            "rounded-3xl border border-zinc-600 bg-zinc-800",
+            "cursor-pointer disabled:cursor-auto",
+            "transition-colors text-zinc-600 font-medium text-sm",
+            "h-20 sm:h-16 px-3 sm:px-10 sm:w-auto",
+            { "text-xl font-bold text-white bg-sky-400": isAutoplaying },
           )}
         >
           <Icon
             name="tri"
             size={16}
-            className={cn("text-sky-300 shrink-0", {
+            className={cn("text-sky-400 shrink-0", {
               "text-zinc-50": isAutoplaying,
             })}
           />

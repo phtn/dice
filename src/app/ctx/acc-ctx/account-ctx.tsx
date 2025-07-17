@@ -27,7 +27,11 @@ interface AccountCtxValues {
 const AccountCtx = createContext<AccountCtxValues | null>(null);
 
 const AccountCtxProvider = ({ children }: AccountProviderProps) => {
-  const [balance, setBalance] = useState<Balance>({} as Balance);
+  const [balance, setBalance] = useState<Balance>({
+    amount: 500,
+    currencyCode: "USD",
+    fractionalDigits: 2,
+  });
 
   const updateBalance = useCallback(
     async (amount: number) => {

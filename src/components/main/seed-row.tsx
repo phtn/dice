@@ -1,6 +1,6 @@
 "use client";
 
-import { SeedPair } from "@/app/utils/rng";
+import { SeedPair } from "use-rng";
 import { useRNGCtx } from "@/app/ctx/rng-ctx";
 
 export const SeedRow = () => {
@@ -8,13 +8,17 @@ export const SeedRow = () => {
 
   return (
     <div className="pt-2 flex w-full h-fit rounded-xl bg-gradient-to-br from-zinc-900/50 via-zinc-900/30 to-zinc-900/10 row-start-2 items-start justify-between">
-      <SeedValues {...seedPair} />
+      <SeedValues
+        clientSeed={seedPair.cS}
+        serverSeed={seedPair.sS}
+        nonce={seedPair.nonce}
+      />
       <GenerateNewSeed generateFn={generateSeeds} />
     </div>
   );
 };
 
-const SeedValues = ({ cS, sS, nonce }: SeedPair) => {
+const SeedValues = ({ clientSeed: cS, serverSeed: sS, nonce }: SeedPair) => {
   return (
     <ul className="list-inside text-sm/6 space-y-0.5 text-center sm:text-left">
       <li className="tracking-[-.01em] space-x-4 flex">

@@ -1,15 +1,21 @@
 "use client";
 
-import * as React from "react";
-import { Range, Root, Thumb, Track } from "@radix-ui/react-slider";
-
-import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { Range, Root, Thumb, Track } from "@radix-ui/react-slider";
+import {
+  type ComponentProps,
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 function Slider({
   className,
@@ -20,11 +26,11 @@ function Slider({
   showTooltip = false,
   tooltipContent,
   ...props
-}: React.ComponentProps<typeof Root> & {
+}: ComponentProps<typeof Root> & {
   showTooltip?: boolean;
-  tooltipContent?: (value: number) => React.ReactNode;
+  tooltipContent?: (value: number) => ReactNode;
 }) {
-  const [internalValues, setInternalValues] = React.useState<number[]>(
+  const [internalValues, setInternalValues] = useState<number[]>(
     Array.isArray(value)
       ? value
       : Array.isArray(defaultValue)
@@ -32,7 +38,7 @@ function Slider({
         : [min, max],
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (value !== undefined) {
       setInternalValues(Array.isArray(value) ? value : [value]);
     }
@@ -43,7 +49,7 @@ function Slider({
     props.onValueChange?.(newValue);
   };
 
-  const [showTooltipState, setShowTooltipState] = React.useState(false);
+  const [showTooltipState, setShowTooltipState] = useState(false);
 
   const handlePointerDown = () => {
     if (showTooltip) {
@@ -51,13 +57,13 @@ function Slider({
     }
   };
 
-  const handlePointerUp = React.useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     if (showTooltip) {
       setShowTooltipState(false);
     }
   }, [showTooltip]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (showTooltip) {
       document.addEventListener("pointerup", handlePointerUp);
       return () => {
@@ -121,9 +127,7 @@ function Slider({
         />
       </Track>
       {Array.from({ length: internalValues.length }, (_, index) => (
-        <React.Fragment key={index}>
-          {renderThumb(internalValues[index])}
-        </React.Fragment>
+        <Fragment key={index}>{renderThumb(internalValues[index])}</Fragment>
       ))}
     </Root>
   );
