@@ -1,4 +1,4 @@
-import { useBetCtx } from "@/app/ctx/bet-ctx";
+import { useBetCtx } from "@/ctx/bet-ctx";
 
 export const ParamsRow = () => {
   const { betAmount, multiplier } = useBetCtx();

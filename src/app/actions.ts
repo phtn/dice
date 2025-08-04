@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { UserAccount } from "./ctx/acc-ctx/types";
+import { UserAccount } from "@/ctx/acc-ctx/types";
 
 export const setAccount = async (account: UserAccount) => {
   const store = await cookies();
@@ -11,5 +11,14 @@ export const setAccount = async (account: UserAccount) => {
 export const getAccount = async (): Promise<UserAccount> => {
   const store = await cookies();
   const account = store.get("fair-dice-account")?.value;
-  return account && JSON.parse(account);
+  return account
+    ? JSON.parse(account)
+    : {
+        balance: {
+          amount: 420,
+          fractionalDigits: 2,
+          currencyCode: "PHP",
+        },
+        id: "999",
+      };
 };

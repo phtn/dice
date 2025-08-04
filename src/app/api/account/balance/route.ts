@@ -1,4 +1,4 @@
-import { UserAccount } from "@/app/ctx/acc-ctx/types";
+import { UserAccount } from "@/ctx/acc-ctx/types";
 import { generateId } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 

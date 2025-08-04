@@ -5,9 +5,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "motion/react";
 import { Slider } from "../ui/slider";
 import Image from "next/image";
-import { useRNGCtx } from "@/app/ctx/rng-ctx";
+import { useRNGCtx } from "@/ctx/rng-ctx";
 import { cn } from "@/lib/utils";
-import { useBetCtx } from "@/app/ctx/bet-ctx";
+import { useBetCtx } from "@/ctx/bet-ctx";
+import { useSFX } from "@/lib/hooks/sfx";
 
 export const SliderRow = () => {
   const { result } = useRNGCtx();
@@ -15,6 +16,7 @@ export const SliderRow = () => {
 
   const [prevRandomNumber, setPrevRandomNumber] = useState(0); // Track previous value
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isFirstRun, setIsFirstRun] = useState(true);
   const [tilt, setTilt] = useState(0);
   const [sliderValue, setSliderValue] = useState<number[]>([50]);
@@ -39,6 +41,7 @@ export const SliderRow = () => {
   useEffect(() => {
     let delay: NodeJS.Timeout;
     if (result) {
+      setIsPlaying(true);
       if (isFirstRun) {
         setIsFirstRun(false);
       }
@@ -56,6 +59,7 @@ export const SliderRow = () => {
 
   const handleSliderChange = useCallback(
     (value: number[]) => {
+      setIsPlaying(false);
       setSliderValue(value);
       setMult(value[0]);
     },
@@ -67,6 +71,24 @@ export const SliderRow = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [result],
   );
+
+  const { winSFX: fx, stepSFX: step } = useSFX();
+
+  useEffect(() => {
+    if (isPlaying) {
+      if (result > sliderValue[0]) fx();
+    }
+  }, [isPlaying, fx, result, sliderValue]);
+
+  useEffect(() => {
+    if (isAnimating) {
+      if (tilt >= 3) step({ playbackRate: 2.4 });
+      if (tilt >= 1) step({ playbackRate: 2.0 });
+      if (tilt <= 1) step({ playbackRate: 1.6 });
+      console.log(Math.abs(tilt));
+    }
+  }, [isAnimating, tilt, step]);
+
   return (
     <div className="w-[95vw] mx-auto md:w-3xl mt-28 md:px-6 py-6 border border-zinc-700 rounded-xl text-white">
       <div className="relative w-auto mb-12" ref={sliderContainerRef}>

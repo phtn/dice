@@ -28,7 +28,7 @@ const AccountCtx = createContext<AccountCtxValues | null>(null);
 
 const AccountCtxProvider = ({ children }: AccountProviderProps) => {
   const [balance, setBalance] = useState<Balance>({
-    amount: 500,
+    amount: 0,
     currencyCode: "USD",
     fractionalDigits: 2,
   });

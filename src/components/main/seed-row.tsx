@@ -1,7 +1,7 @@
 "use client";
 
 import { SeedPair } from "use-rng";
-import { useRNGCtx } from "@/app/ctx/rng-ctx";
+import { useRNGCtx } from "@/ctx/rng-ctx";
 
 export const SeedRow = () => {
   const { seedPair, generateSeeds } = useRNGCtx();

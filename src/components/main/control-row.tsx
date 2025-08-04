@@ -1,15 +1,16 @@
 "use client";
 
-import { useBetCtx } from "@/app/ctx/bet-ctx";
-import { useRNGCtx } from "@/app/ctx/rng-ctx";
+import { useBetCtx } from "@/ctx/bet-ctx";
+import { useRNGCtx } from "@/ctx/rng-ctx";
 import { useCallback, useMemo, useRef } from "react";
 import { HyperList } from "../hyper/list";
-import { useAccountCtx } from "@/app/ctx/acc-ctx/account-ctx";
+import { useAccountCtx } from "@/ctx/acc-ctx/account-ctx";
 import { generateId } from "ai";
 import { setAccount } from "@/app/actions";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { AUTOPLAYS, BetAmountMulticand } from "@/app/ctx/bet-ctx/bet-ctx";
+import { AUTOPLAYS, BetAmountMulticand } from "@/ctx/bet-ctx/bet-ctx";
+import { useSFX } from "@/lib/hooks/sfx";
 
 export const ControlRow = () => {
   const { generateSeeds, rollDice, seedPair, setResults, result } = useRNGCtx();
@@ -26,7 +27,10 @@ export const ControlRow = () => {
   const { balance, getBalance, updateBalance } = useAccountCtx();
   // const [bal, setBal] = useState<number | undefined>(balance?.amount);
 
+  const { tickSFX: fx, clickSFX: betfx } = useSFX();
+
   const handleDiceRoll = useCallback(async () => {
+    betfx();
     const currentBetAmount = betAmount; // Capture current bet amount
     const currentMultiplier = multiplier; // Capture current multiplier
     // const currentX = x; // Capture current x
@@ -41,6 +45,7 @@ export const ControlRow = () => {
       },
       (r = result) => {
         generateSeeds();
+
         const balAmount =
           balance &&
           balance.amount +
@@ -64,14 +69,16 @@ export const ControlRow = () => {
     multiplier,
     generateSeeds,
     updateBalance,
+    betfx,
   ]);
 
   const handleSetBet = useCallback(
     (type: BetAmountMulticand) => () => {
+      fx({ playbackRate: type === "2x" ? 1.5 : 1.0 });
       setBet(type);
       getBalance();
     },
-    [setBet, getBalance],
+    [setBet, getBalance, fx],
   );
 
   const timerRef = useRef<number | undefined>(undefined);

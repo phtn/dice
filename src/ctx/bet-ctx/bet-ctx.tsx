@@ -11,7 +11,7 @@ import {
   SetStateAction,
 } from "react";
 import { quart, quartCurve } from "./helpers";
-import { useAccountCtx } from "../acc-ctx/account-ctx";
+import { useAccountCtx } from "@/ctx/acc-ctx";
 
 interface BetProviderProps {
   children: ReactNode;

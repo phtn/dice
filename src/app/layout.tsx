@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/nav/nav";
@@ -18,6 +18,11 @@ const space = Space_Grotesk({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  userScalable: false,
+  initialScale: 1,
+  maximumScale: 1,
+};
 export const metadata: Metadata = {
   title: "BET69",
   description: "Fair Dice",
