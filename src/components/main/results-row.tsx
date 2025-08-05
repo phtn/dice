@@ -13,7 +13,7 @@ export const ResultsRow = () => {
         delay={0}
         direction="left"
         component={ResultItem}
-        data={results.reverse().slice(-15)}
+        data={results.slice(-15)}
         container="h-12 flex space-x-2 justify-center items-center overflow-x-scroll"
       />
     </div>

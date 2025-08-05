@@ -1,33 +1,18 @@
 "use client";
 
 import { ResultsRow } from "@/components/main/results-row";
-import { RNGCtxProvider } from "@/ctx/rng-ctx";
 import { ControlRow } from "@/components/main";
-import { PropsWithChildren } from "react";
 import { SliderRow } from "@/components/main/slider-row";
-import { BetCtxProvider } from "@/ctx/bet-ctx";
-import { AccountCtxProvider } from "@/ctx/acc-ctx";
 import { ParamsRow } from "@/components/main/params-row";
+import { Container } from "@/components/container";
 
 export const Content = () => {
   return (
-    <AccountCtxProvider>
-      <RNGCtxProvider>
-        <BetCtxProvider>
-          <Container>
-            <ResultsRow />
-            <SliderRow />
-            <ParamsRow />
-            <ControlRow />
-          </Container>
-        </BetCtxProvider>
-      </RNGCtxProvider>
-    </AccountCtxProvider>
+    <Container>
+      <ResultsRow />
+      <SliderRow />
+      <ParamsRow />
+      <ControlRow />
+    </Container>
   );
 };
-
-const Container = ({ children }: PropsWithChildren) => (
-  <main className="md:container mx-auto overflow-x-hidden grid grid-rows py-2 items-start justify-items-center min-h-[94vh] p-4 gap-6 font-[family-name:var(--font-geist-sans)]">
-    {children}
-  </main>
-);

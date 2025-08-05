@@ -10,8 +10,9 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
-import { quart, quartCurve } from "./helpers";
+import { quart } from "./helpers";
 import { useAccountCtx } from "@/ctx/acc-ctx";
+import { GameType } from "../rng-ctx/types";
 
 interface BetProviderProps {
   children: ReactNode;
@@ -21,13 +22,15 @@ interface BetCtxValues {
   setBet: (type: BetAmountMulticand) => void;
   x: number;
   multiplier: number;
-  setMult: (x: number) => void;
+  setMult: (current: number, game: GameType) => void;
   setX: Dispatch<SetStateAction<number>>;
   curve: number;
   autoplayCount: number;
   setAutoplayCount: Dispatch<SetStateAction<number>>;
   isAutoplaying: boolean;
   setIsAutoplaying: Dispatch<SetStateAction<boolean>>;
+  onSetGameType: (type: GameType) => void;
+  gameType: GameType;
 }
 
 const BetCtx = createContext<BetCtxValues | null>(null);
@@ -36,6 +39,7 @@ export type BetAmountMulticand = "zero" | "half" | "2x" | "max";
 
 export const AUTOPLAYS = 100;
 const BetCtxProvider = ({ children }: BetProviderProps) => {
+  const [gameType, setGameType] = useState<GameType>("dice");
   const [betAmount, setBetAmount] = useState(0);
   const [multiplier, setMultiplier] = useState(2);
   const [x, setX] = useState(50);
@@ -44,7 +48,9 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
 
   const { balance } = useAccountCtx();
 
-  const curve = useMemo(() => quartCurve(x), [x]);
+  const onSetGameType = useCallback((type: GameType) => setGameType(type), []);
+
+  const curve = useMemo(() => quart(x), [x]);
 
   const setBet = useCallback(
     (type: BetAmountMulticand) => {
@@ -65,8 +71,10 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
     [balance?.amount],
   );
 
-  const setMult = useCallback((current: number) => {
-    setMultiplier(quart(current));
+  const setMult = useCallback((current: number, game: GameType) => {
+    setMultiplier(() =>
+      game === "dice" ? quart(current) : current / 11.2 + 1,
+    );
     setX(current);
   }, []);
 
@@ -83,6 +91,8 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
       isAutoplaying,
       setAutoplayCount,
       setIsAutoplaying,
+      onSetGameType,
+      gameType,
     }),
     [
       curve,
@@ -95,6 +105,8 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
       isAutoplaying,
       setAutoplayCount,
       setIsAutoplaying,
+      onSetGameType,
+      gameType,
     ],
   );
   return <BetCtx value={value}>{children}</BetCtx>;

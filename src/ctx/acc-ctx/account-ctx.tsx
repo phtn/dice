@@ -22,20 +22,21 @@ interface AccountCtxValues {
   balance: Balance | undefined;
   getBalance: () => Promise<void>;
   updateBalance: (amount: number) => Promise<void>;
+  resetBalance: () => void;
 }
 
 const AccountCtx = createContext<AccountCtxValues | null>(null);
 
 const AccountCtxProvider = ({ children }: AccountProviderProps) => {
   const [balance, setBalance] = useState<Balance>({
-    amount: 0,
+    amount: 5000,
     currencyCode: "USD",
     fractionalDigits: 2,
   });
 
   const updateBalance = useCallback(
     async (amount: number) => {
-      const currentBal = { ...balance, amount };
+      const currentBal = { ...balance, amount: balance.amount + amount };
       await setAccount({ id: generateId(), balance: currentBal });
       setBalance(currentBal);
     },
@@ -47,6 +48,15 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
     setBalance(bal);
   }, []);
 
+  const resetBalance = useCallback(() => {
+    const resetBal = {
+      amount: 5000,
+      currencyCode: "USD",
+      fractionalDigits: 2,
+    };
+    setBalance(resetBal);
+  }, []);
+
   useEffect(() => {
     getBalance().catch(console.error);
   }, [getBalance]);
@@ -56,8 +66,9 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
       balance,
       getBalance,
       updateBalance,
+      resetBalance,
     }),
-    [balance, getBalance, updateBalance],
+    [balance, getBalance, updateBalance, resetBalance],
   );
   return <AccountCtx value={value}>{children}</AccountCtx>;
 };

@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Space_Grotesk,
+  Red_Hat_Display,
+} from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/nav/nav";
+import { ProvidersCtxProvider } from "@/ctx";
+import { type ReactNode } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,29 +25,35 @@ const space = Space_Grotesk({
   subsets: ["latin"],
 });
 
+const redhat = Red_Hat_Display({
+  variable: "--font-redhat",
+  subsets: ["latin"],
+});
 export const viewport: Viewport = {
   userScalable: false,
   initialScale: 1,
   maximumScale: 1,
 };
 export const metadata: Metadata = {
-  title: "BET69",
-  description: "Fair Dice",
+  title: "BET69.ph",
+  description: "Provably Fair Demo",
   icons: ["/69-icon.svg"],
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${space.variable} ${geistSans.variable} ${geistMono.variable} antialiased dark:bg-zinc-950 bg-zinc-950`}
+        className={`${redhat.variable} ${space.variable} ${geistSans.variable} ${geistMono.variable} antialiased dark:bg-zinc-950 bg-zinc-950`}
       >
-        <Navbar />
-        {children}
+        <ProvidersCtxProvider>
+          <Navbar />
+          {children}
+        </ProvidersCtxProvider>
       </body>
     </html>
   );

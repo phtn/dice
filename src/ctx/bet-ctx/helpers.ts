@@ -74,7 +74,7 @@ export function quartCurve(a: number): number {
 
 export function quart(a: number): number {
   if (a < 2 || a > 99.99) {
-    throw new Error("Input 'a' must be between 2 and 99.99");
+    // throw new Error("Input 'a' must be between 2 and 99.99");
   }
 
   // Anchor points you provided for a ∈ [2, 95]
@@ -124,4 +124,14 @@ export function quart(a: number): number {
   const t = (a - startA) / (endA - startA); // normalize to 0–1
   const eased = Math.pow(t, 12); // ease-in quart
   return startB + eased * (endB - startB);
+}
+
+export function lquart(a: number): number {
+  // edge = 0.01 // base house
+  // P(win) = (1 / multiplier) * 0.9802
+  if (a < 0.9 || a > 1000000) {
+    // throw new Error("Input 'a' must be between 2 and 99.99");
+  }
+
+  return (1 / a) * 0.9802;
 }

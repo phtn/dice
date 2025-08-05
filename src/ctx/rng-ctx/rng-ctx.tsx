@@ -20,7 +20,7 @@ import {
   SetStateAction,
 } from "react";
 import { fetchServerSeed } from "./helpers";
-import { Result } from "./types";
+import { GameType, Result } from "./types";
 
 interface RNGProviderProps {
   children: ReactNode;
@@ -41,6 +41,8 @@ interface RNGCtxValues {
   seedPair: { cS: string; sS: string; nonce: number };
   results: Result[];
   setResults: Dispatch<SetStateAction<Result[]>>;
+  onGameChange: (gameType: GameType) => void;
+  range: [number, number];
 }
 
 const RNGCtx = createContext<RNGCtxValues | null>(null);
@@ -49,10 +51,22 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
   const [cS, setCS] = useState<string>("");
   const [sS, setSS] = useState<string>("");
   const [nonce, setNonce] = useState<number>(0);
+  const [range, setRange] = useState<[number, number]>([0, 99.99]);
 
   const [result, setResult] = useState<number>(0);
   const [results, setResults] = useState<Result[]>([]);
   const [spN, setSPN] = useState<number>(0);
+
+  // const onSetRange = useCallback(
+  //   (ranges: [number, number]) => setRange(ranges),
+  //   [],
+  // );
+
+  const onGameChange = useCallback(
+    (gameType: GameType) =>
+      setRange(gameType === "dice" ? [2, 99.99] : [1, 1000000]),
+    [],
+  );
 
   const generateSeeds = useCallback(() => {
     fetchServerSeed().then(setSS).catch(console.error);
@@ -68,14 +82,14 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
     async (params: RandomWithPrecise, callback: (result: number) => void) => {
       const n = await getRandomWithPrecision(
         params.seedPair,
-        params.range?.[0] ?? 0,
-        params.range?.[1] ?? 99.99,
+        params.range?.[0] ?? range[0],
+        params.range?.[1] ?? range[1],
       );
       setResult(n);
       setNonce((prev) => prev++);
       callback(n); // Execute the callback with the result
     },
-    [],
+    [range],
   );
 
   useEffect(() => {
@@ -98,6 +112,8 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
       setResults,
       setSeedPair,
       generateSeeds,
+      onGameChange,
+      range,
     }),
     [
       cS,
@@ -111,6 +127,8 @@ const RNGCtxProvider = ({ children }: RNGProviderProps) => {
       setResults,
       setSeedPair,
       generateSeeds,
+      onGameChange,
+      range,
     ],
   );
   return <RNGCtx value={value}>{children}</RNGCtx>;
