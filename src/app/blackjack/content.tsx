@@ -13,10 +13,12 @@ export const Content = () => {
       {/* Main Blackjack Game Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Shoe Status Card */}
-        <ShoeCard />
+        <DesktopShoeCard />
 
         {/* Main Game Table */}
         <GameplayCard />
+
+        <MobileShoeCard />
 
         {/* Game Statistics */}
         <InfoCard />
@@ -33,3 +35,14 @@ export const Content = () => {
     </div>
   );
 };
+
+const DesktopShoeCard = () => (
+  <div className="lg:col-span-2 hidden lg:flex w-full items-start justify-center">
+    <ShoeCard />
+  </div>
+);
+const MobileShoeCard = () => (
+  <div className="lg:col-span-2 lg:hidden">
+    <ShoeCard />
+  </div>
+);

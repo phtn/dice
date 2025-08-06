@@ -20,9 +20,7 @@ export const StatCard = ({
         {label}
       </div>
       {children}
-      <div className={`text-lg text-right text-primary-foreground`}>
-        {value}
-      </div>
+      <div className={`text-lg text-right text-zinc-300`}>{value}</div>
     </HyperCard>
   );
 };

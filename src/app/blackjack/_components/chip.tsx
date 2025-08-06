@@ -66,7 +66,8 @@ export const Chip = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "relative w-12 h-12 rounded-full border flex items-center justify-center overflow-hidden",
+        "rounded-full border border-zinc-400",
+        "relative w-12 h-12 flex items-center justify-center overflow-hidden",
         "hover:scale-105 cursor-pointer text-white text-xs font-bold transition-all duration-200",
         {
           "ring-2 ring-white/40 ring-offset-2 ring-offset-neutral-900 scale-110":
@@ -85,20 +86,20 @@ export const Chip = ({
       >
         <g>
           <circle
-            className={colorClass}
+            className={cn("drop-shadow-xs", colorClass)}
             cx="39.019"
             cy="38.999"
             r="38.5"
           ></circle>
           <path
-            className={colorClass}
+            className={cn("drop-shadow-xs", colorClass)}
             // stroke={"rgb(249, 150, 57)"}
             // strokeWidth={1.5}
             d="M38.94 12.5A26.5 26.5 0 1 0 65.44 39a26.529 26.529 0 0 0-26.5-26.5zm0 52A25.5 25.5 0 1 1 64.439 39 25.53 25.53 0 0 1 38.94 64.5z"
           ></path>
           <circle
             // fill={color}
-            className={colorClass}
+            className={cn("drop-shadow-xs", colorClass)}
             strokeWidth={1.5}
             cx="39"
             cy="38.997"

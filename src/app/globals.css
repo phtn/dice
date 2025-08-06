@@ -42,7 +42,8 @@
     --color-blink-green: var(--blink-green);
     --color-blink-red: var(--blink-red);
     --color-six-nine: oklch(0.885 0.181 94.87);
-    --color-poker-table: oklch(0.44 0.102 150.7);
+    --color-poker-dark: oklch(0.44 0.102 150.7);
+    --color-poker-light: oklch(0.48 0.102 150.7);
     --color-chip-a: oklch(0.66 0 0);
     --color-chip-b: oklch(0.647 0.054 195.89);
     --color-chip-c: oklch(0.762 0.157 59.36);

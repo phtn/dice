@@ -10,7 +10,7 @@ import { setAccount } from "@/app/actions";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AUTOPLAYS, BetAmountMulticand } from "@/ctx/bet-ctx/bet-ctx";
-import { useSFX } from "@/lib/hooks/sfx";
+import { useSFX } from "@/lib/hooks/use-sfx";
 
 export const ControlRow = () => {
   const { generateSeeds, rollDice, seedPair, setResults, result } = useRNGCtx();

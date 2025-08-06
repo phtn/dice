@@ -5,6 +5,7 @@ import { BetCtxProvider } from "./bet-ctx";
 import { RNGCtxProvider } from "./rng-ctx";
 import { AccountCtxProvider } from "./acc-ctx";
 import { BlackjackCtxProvider } from "./blackjack-ctx";
+import WagmiContext from "./wagmi";
 
 interface ProvidersProviderProps {
   children: ReactNode;
@@ -25,13 +26,15 @@ const ProvidersCtxProvider = ({ children }: ProvidersProviderProps) => {
   );
   return (
     <ProvidersCtx value={value}>
-      <AccountCtxProvider>
-        <RNGCtxProvider>
-          <BetCtxProvider>
-            <BlackjackCtxProvider>{children}</BlackjackCtxProvider>
-          </BetCtxProvider>
-        </RNGCtxProvider>
-      </AccountCtxProvider>
+      <WagmiContext cookies={""}>
+        <AccountCtxProvider>
+          <RNGCtxProvider>
+            <BetCtxProvider>
+              <BlackjackCtxProvider>{children}</BlackjackCtxProvider>
+            </BetCtxProvider>
+          </RNGCtxProvider>
+        </AccountCtxProvider>
+      </WagmiContext>
     </ProvidersCtx>
   );
 };

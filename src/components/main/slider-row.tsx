@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useRNGCtx } from "@/ctx/rng-ctx";
 import { cn } from "@/lib/utils";
 import { useBetCtx } from "@/ctx/bet-ctx";
-import { useSFX } from "@/lib/hooks/sfx";
+import { useSFX } from "@/lib/hooks/use-sfx";
 
 export const SliderRow = () => {
   const { result } = useRNGCtx();

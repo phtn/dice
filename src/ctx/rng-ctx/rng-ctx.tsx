@@ -1,6 +1,6 @@
 "use client";
 
-import { asyncFn } from "@/app/utils/helpers";
+import { asyncFn } from "@/utils/helpers";
 import {
   getRandomSeedPair,
   getRandomWithPrecision,

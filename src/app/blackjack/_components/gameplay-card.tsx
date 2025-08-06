@@ -20,17 +20,20 @@ export const GameplayCard = () => {
   const {
     gameState,
     gameResult,
-    playerHand,
+    playerHands,
     dealerHand,
+    activeHandIndex,
     betAmount,
     setBetAmount,
     startNewGame,
     hit,
     stand,
     doubleDown,
+    split,
     canDoubleDown,
     canHit,
     canStand,
+    canSplit,
   } = useBlackjackCtx();
 
   const { balance, resetBalance } = useAccountCtx();
@@ -72,15 +75,6 @@ export const GameplayCard = () => {
     }
   };
 
-  const handleReBet = () => {
-    if (lastBetAmount > 0 && (balance?.amount || 0) >= lastBetAmount) {
-      setBetAmount(lastBetAmount);
-      // Reconstruct bet history for re-bet (simplified as single amount)
-      setBetHistory([lastBetAmount]);
-      setSelectedChips([lastBetAmount]);
-    }
-  };
-
   const handleClearBet = () => {
     setBetAmount(0);
     setSelectedChips([]);
@@ -93,6 +87,15 @@ export const GameplayCard = () => {
     startNewGame();
   };
 
+  const handleReplay = () => {
+    if (lastBetAmount > 0 && (balance?.amount || 0) >= lastBetAmount) {
+      setBetAmount(lastBetAmount);
+      // Reconstruct bet history for re-bet (simplified as single amount)
+      startNewGame();
+      setBetHistory([lastBetAmount]);
+      setSelectedChips([lastBetAmount]);
+    }
+  };
   const getResultMessage = () => {
     switch (gameResult) {
       case "player-blackjack":
@@ -111,18 +114,20 @@ export const GameplayCard = () => {
   };
 
   return (
-    <Card className="lg:col-span-6 bg-poker-table border-transparent">
-      <CardHeader className="pb-3">
+    <Card className="lg:col-span-6 bg-poker-dark border-transparent rounded-b-3xl">
+      <CardHeader className="">
         <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
-          BLACKJACK
+          BL♠CKJ♦CK
         </CardTitle>
         <CardAction>
           <div className="flex gap-2 items-center">
-            <div className="text-sm text-neutral-400">
-              Balance: $
-              {balance?.amount.toLocaleString("en-US", {
-                minimumFractionDigits: 0,
-              }) ?? 0}
+            <div className="text-sm font-medium text-neutral-300 uppercase tracking-wider">
+              <span>Balance:</span> $
+              <span className="tracking-tight">
+                {balance?.amount.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                }) ?? 0}
+              </span>
             </div>
             <Button
               size="sm"
@@ -135,7 +140,7 @@ export const GameplayCard = () => {
           </div>
         </CardAction>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="bg-poker-light space-y-8 mx-2 border border-white/10 h-full rounded-[1.75rem]">
         {/* Dealer Hand */}
         <div className="space-y-3 min-h-24">
           <div className="text-xs text-neutral-400 font-mono">DEALER</div>
@@ -164,77 +169,113 @@ export const GameplayCard = () => {
           </div>
         </div>
 
-        {/* Player Hand */}
+        {/* Player Hands */}
         <div className="py-8 min-h-24">
-          {/*<div className="text-xs text-neutral-400 font-mono">PLAYER</div>*/}
-          <div className="flex gap-3 items-center justify-center">
-            <div className="flex gap-2">
-              {playerHand.cards.map((card, index) => (
-                <PlayingCard key={index} card={card} />
-              ))}
+          {playerHands.map((hand, handIndex) => (
+            <div key={hand.id} className="mb-4">
+              {playerHands.length > 1 && (
+                <div className="text-xs text-neutral-500 font-mono text-center mb-2">
+                  Hand {handIndex + 1}
+                  {handIndex === activeHandIndex &&
+                    gameState === "player-turn" && (
+                      <span className="text-orange-500"> (ACTIVE)</span>
+                    )}
+                  {hand.result && (
+                    <span
+                      className={`ml-2 ${
+                        hand.result === "player-wins" ||
+                        hand.result === "player-blackjack"
+                          ? "text-green-500"
+                          : hand.result === "push"
+                            ? "text-yellow-500"
+                            : "text-red-500"
+                      }`}
+                    >
+                      {hand.result === "player-blackjack"
+                        ? "BLACKJACK!"
+                        : hand.result === "player-wins"
+                          ? "WIN"
+                          : hand.result === "push"
+                            ? "PUSH"
+                            : "LOSE"}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-3 items-center justify-center">
+                <div className="flex gap-2">
+                  {hand.cards.map((card, cardIndex) => (
+                    <PlayingCard key={cardIndex} card={card} />
+                  ))}
+                </div>
+                <div className="text-white font-mono text-lg">
+                  {hand.value}
+                  {hand.isSoft && (
+                    <span className="text-sm text-neutral-400"> (soft)</span>
+                  )}
+                  {hand.isBlackjack && (
+                    <span className="text-orange-300 text-sm"> BLACKJACK!</span>
+                  )}
+                  {hand.isBust && (
+                    <span className="text-red-300 text-sm"> BUST!</span>
+                  )}
+                  <div className="text-xs text-neutral-400">
+                    Bet: ${hand.betAmount}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-white font-mono text-lg">
-              {playerHand.value}
-              {playerHand.isSoft && (
-                <span className="text-sm text-neutral-400"> (soft)</span>
-              )}
-              {playerHand.isBlackjack && (
-                <span className="text-orange-300 text-sm"> BLACKJACK!</span>
-              )}
-              {playerHand.isBust && (
-                <span className="text-red-300 text-sm"> BUST!</span>
-              )}
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Game Result */}
-
-        <div className="text-center py-4">
-          <div className="text-lg font-bold text-orange-300">
-            {getResultMessage()}
+        {gameResult && (
+          <div className="text-center py-4">
+            <div className="text-lg font-bold text-orange-300">
+              {getResultMessage()}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Betting Interface */}
         {gameState === "betting" && (
           <div className="space-y-4 border-neutral-700 pt-4">
             <div className="flex justify-between items-center">
-              <div className="text-xs text-neutral-400 font-mono">
-                PLACE YOUR BET
-              </div>
+              <div className="h-px bg-zinc-100/50 w-[12px]"></div>
+              <div className="h-px bg-zinc-100/50 w-[12px]"></div>
             </div>
 
             {/* Current Bet Display */}
             <div className="space-y-2">
-              <div className="space-y-4 flex flex-col items-center justify-center">
-                <div>
-                  <span className="text-xs text-neutral-300 gap-3 pr-3">
-                    Bet:
+              <div className="space-x-4 flex items-center justify-center">
+                <Button
+                  size="icon"
+                  onClick={handleUndo}
+                  disabled={betHistory.length === 0}
+                  variant="outline"
+                  className="text-xs bg-zinc-700/10 rounded-full border-transparent text-neutral-50 hover:bg-zinc-800 disabled:opacity-0"
+                >
+                  <Icon name="arrow-undo" className="size-4" />
+                </Button>
+                <div className="-space-y-1 flex flex-col items-center">
+                  <span className="text-white tracking-tight text-xl font-sans font-bold">
+                    {betAmount.toLocaleString()}
                   </span>
-                  <span className="text-white tracking-tight text-xl font-redhat font-bold">
-                    ${betAmount}
-                  </span>
+                  <div className="text-[8px] tracking-wider text-neutral-200">
+                    BET
+                  </div>
                 </div>
+
                 <div>
                   {betAmount > 0 && (
                     <div className="flex gap-1">
                       <Button
-                        onClick={handleUndo}
-                        disabled={betHistory.length === 0}
-                        size="sm"
+                        size="icon"
                         variant="outline"
-                        className="text-xs h-6 px-2 bg-zinc-800 border-transparent text-neutral-300 hover:bg-neutral-700 disabled:opacity-50"
-                      >
-                        Undo
-                      </Button>
-                      <Button
                         onClick={handleClearBet}
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-6 px-2 bg-zinc-800 border-transparent text-neutral-300 hover:bg-neutral-700"
+                        className="text-xs bg-zinc-700/10 rounded-full border-transparent text-neutral-50 hover:bg-zinc-800 disabled:opacity-50"
                       >
-                        Clear
+                        <Icon name="clear" className="size-4" />
                       </Button>
                     </div>
                   )}
@@ -290,14 +331,14 @@ export const GameplayCard = () => {
               {betAmount === 0 && lastBetAmount > 0 ? (
                 <Button
                   size="icon"
-                  onClick={handleReBet}
+                  onClick={handleReplay}
                   disabled={(balance?.amount || 0) < lastBetAmount}
                   variant="outline"
                   className={cn(
-                    "rounded-full bg-neutral-800 border-transparent text-neutral-300 hover:bg-neutral-700 shrink-0 font-bold tracking-tighter text-xl",
+                    "rounded-full bg-neutral-900 border-transparent text-emerald-300 hover:bg-neutral-700 shrink-0 font-bold tracking-tighter text-xl",
                   )}
                 >
-                  <Icon name="asterisk" className={`size-6`} />
+                  <Icon name="arrow-rotate-ccw" className={`size-6`} />
                 </Button>
               ) : (
                 <Button
@@ -310,7 +351,7 @@ export const GameplayCard = () => {
                     betAmount <= 0 || (balance?.amount || 0) < betAmount * 2
                   }
                   variant="outline"
-                  className="bg-zinc-900 border-transparent text-cyan-300 font-bold tracking-tighter text-xl rounded-lg px-2.5"
+                  className="bg-zinc-900 border-transparent text-cyan-300 font-semibold tracking-tighter text-lg rounded-lg px-2.5"
                 >
                   2x
                 </Button>
@@ -320,7 +361,7 @@ export const GameplayCard = () => {
               <Button
                 size="lg"
                 className={cn(
-                  "bg-zinc-900 border-transparent text-emerald-400 font-bold tracking-tighter text-xl px-2 rounded-lg",
+                  "bg-zinc-900 border-transparent text-orange-500 font-bold tracking-tighter text-lg px-2.5 rounded-xl",
                   // {" ":}
                 )}
                 onClick={() => {
@@ -347,26 +388,33 @@ export const GameplayCard = () => {
         {/* Game Actions */}
         {gameState === "player-turn" && (
           <div className="space-y-4 pt-4 flex justify-center">
-            <div className="flex gap-4">
+            <div className="flex gap-5">
               <Button
                 onClick={doubleDown}
                 disabled={!canDoubleDown}
                 className="bg-zinc-900/60 hover:bg-zinc-900 text-orange-300 text-lg font-bold px-2 rounded-lg"
               >
-                x2
+                <span className="drop-shadow-xs">x2</span>
               </Button>
               <Button
                 onClick={hit}
                 disabled={!canHit}
-                className="bg-zinc-900/60 hover:bg-zinc-900 text-blue-300 text-lg font-bold px-2 rounded-lg"
+                className="bg-zinc-900/60 hover:bg-zinc-900 text-blue-300 text-base font-semibold px-2 rounded-lg"
               >
                 HIT
               </Button>
-
+              {canSplit && (
+                <Button
+                  onClick={split}
+                  className="bg-zinc-900/60 hover:bg-zinc-900 text-yellow-300 text-base font-semibold px-2 rounded-lg"
+                >
+                  SPLIT
+                </Button>
+              )}
               <Button
                 onClick={stand}
                 disabled={!canStand}
-                className="bg-zinc-900/60 hover:bg-zinc-900 text-red-400 text-lg font-bold px-2 rounded-lg"
+                className="bg-zinc-900/60 hover:bg-zinc-900 text-red-400 tracking-tighter text-base font-semibold px-2 rounded-lg"
               >
                 STAND
               </Button>
@@ -400,7 +448,7 @@ export const GameplayCard = () => {
             <div className="text-neutral-400 font-mono">
               Balance:{" "}
               <span className="text-white font-bold">
-                ${balance?.amount || 0}
+                ${balance?.amount ?? 0}
               </span>
             </div>
           </div>

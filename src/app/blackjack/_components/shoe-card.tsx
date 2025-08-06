@@ -86,11 +86,11 @@ export const ShoeCard = () => {
         </CardTitle>
         <CardAction>
           <div className="space-x-2 flex items-center">
-            <div className="text-xs text-neutral-400 font-mono -space-y-0.5">
+            <div className="text-xs md:hidden text-neutral-400 font-mono -space-y-0.5">
               <div>DECK</div>
               <div>COUNT</div>
             </div>
-            <div className="flex gap-1">
+            <div className="md:flex lg:hidden xl:flex gap-1">
               {deckOptions.map((count) => (
                 <Button
                   key={count}
@@ -137,17 +137,18 @@ export const ShoeCard = () => {
         </div>
 
         {/* Card Count by Category */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {cardsByCategory.map(({ name, cards, color }) => (
             <div key={name} className="space-y-1">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <div
                   className={`text-sm tracking-wide font-mono uppercase ${color}`}
                 >
                   {name}
                 </div>
-                <div className="text-xs text-neutral-500 text-center">
-                  Total: {cards.reduce((sum, card) => sum + card.remaining, 0)}/
+                <div className="text-xs text-zinc-400 text-center font-redhat">
+                  {cards.reduce((sum, card) => sum + card.remaining, 0)}
+                  <span className="px-0.5 font-thin text-zinc-400">/</span>
                   {cards.reduce((sum, card) => sum + card.total, 0)}
                 </div>
               </div>
@@ -181,6 +182,7 @@ export const ShoeCard = () => {
           <Button
             size="lg"
             onClick={shuffleDeck}
+            variant={"secondary"}
             disabled={gameState !== "betting"}
             className="w-full text-xs py-4"
           >

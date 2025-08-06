@@ -9,6 +9,7 @@ import "./globals.css";
 import { Navbar } from "@/components/nav/nav";
 import { ProvidersCtxProvider } from "@/ctx";
 import { type ReactNode } from "react";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,10 +51,17 @@ export default function RootLayout({
       <body
         className={`${redhat.variable} ${space.variable} ${geistSans.variable} ${geistMono.variable} antialiased dark:bg-zinc-950 bg-zinc-950`}
       >
-        <ProvidersCtxProvider>
-          <Navbar />
-          {children}
-        </ProvidersCtxProvider>
+        <ThemeProvider
+          enableSystem
+          attribute="class"
+          defaultTheme="system"
+          disableTransitionOnChange
+        >
+          <ProvidersCtxProvider>
+            <Navbar />
+            {children}
+          </ProvidersCtxProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
