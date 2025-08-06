@@ -143,7 +143,7 @@ export const GameplayCard = () => {
       <CardContent className="bg-poker-light space-y-8 mx-2 border border-white/10 h-full rounded-[1.75rem]">
         {/* Dealer Hand */}
         <div className="space-y-3 min-h-24">
-          <div className="text-xs text-neutral-400 font-mono">DEALER</div>
+          <div className="text-xs text-neutral-400 font-mono p-2">DEALER</div>
           <div className="flex gap-3 items-center justify-center">
             <div className="flex gap-2">
               {dealerHand.cards.map((card, index) => (

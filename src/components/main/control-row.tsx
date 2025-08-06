@@ -183,7 +183,7 @@ export const ControlRow = () => {
           <Icon
             size={12}
             className={"shrink-0 text-zinc-800"}
-            name={isAutoplaying ? "spinners-3-dots-move" : "re-up.ph"}
+            name={isAutoplaying ? "spinners-dot" : "g-roll-dices"}
           />
           <span
             className={cn(
