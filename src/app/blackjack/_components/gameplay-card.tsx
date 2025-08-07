@@ -14,7 +14,7 @@ import { PlayingCard } from "./playing-card";
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 import { opts } from "@/utils/helpers";
 import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
@@ -37,7 +37,6 @@ const formatHandValue = (hand: Hand) => {
 // Static ChipArray component that never re-renders
 const StaticChipArray = memo(
   ({
-    onChipClick,
     balance,
   }: {
     onChipClick: (chipValue: number) => void;
@@ -78,7 +77,7 @@ const StaticChipArray = memo(
           return (
             <motion.div
               key={chipValue}
-              initial={{ opacity: 0, y: y + 30 }}
+              initial={{ opacity: 0, x, y: y + 30 }}
               animate={{ opacity: 1, x, y }}
               transition={{
                 type: "spring",
@@ -89,13 +88,12 @@ const StaticChipArray = memo(
             >
               <Chip
                 value={chipValue}
-                selected={false}
                 disabled={balance < chipValue}
-                onClick={() => {
-                  if (balance >= chipValue) {
-                    onChipClick(chipValue);
-                  }
-                }}
+                // onClick={() => {
+                //   if (balance >= chipValue) {
+                //     onChipClick(chipValue);
+                //   }
+                // }}
               />
             </motion.div>
           );
@@ -197,12 +195,10 @@ export const GameplayCard = () => {
     }
   }, [gameResult]);
 
-  const [currentBalance] = useState(balance?.amount);
-
   // Create a completely static ChipArray that never re-renders
   const ChipArray = useCallback(() => {
     const chipValues = [5, 10, 25, 50, 100, 250, 1000];
-    const radius = 50;
+    const radius = 15;
     const angleStart = -Math.PI;
     const angleEnd = 0;
     const centerX = 0;
@@ -219,53 +215,52 @@ export const GameplayCard = () => {
     return (
       <motion.div
         initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.15,
-              delayChildren: 0.25,
-            },
+        animate={{
+          transition: {
+            staggerChildren: 0.15,
+            delayChildren: 0.25,
           },
         }}
         className="relative bottom-0 border rounded-xl h-48 mx-auto mt-0 w-full flex justify-center items-center"
       >
         {chipValues.map((chipValue, i) => {
           const { x, y } = arcPositions[i];
-
           return (
-            <motion.div
+            <motion.button
               key={chipValue}
-              initial={{ opacity: 0, y: y + 30 }}
+              initial={{ opacity: 0, x, y: y + 10 }}
               animate={{ opacity: 1, x, y }}
               transition={{
-                type: "spring",
-                visualDuration: 0.6,
-                bounce: 0.4,
-                delay: i * 0.1,
+                type: gameState === "betting" && "spring",
+                visualDuration: 0.2,
+                bounce: 0.2,
+                delay: i * 0.12,
               }}
+              whileTap={{ scale: 0.8 }}
+              // onClick={handleChip(chipValue)}
+              onClick={() => {
+                if ((balance?.amount ?? 0) >= chipValue) {
+                  setBetAmount((prev) => prev + chipValue);
+                  setBetHistory((prev: number[]) => [...prev, chipValue]);
+                }
+              }}
+              className="disabled:opacity-50 cursor-not-allowed"
             >
-              <Chip
+              <Chip value={chipValue} />
+              {/*<Chip
                 value={chipValue}
-                selected={false}
-                disabled={false} // Handle disabled state in the click handler
-                onClick={() => {
-                  // Check balance at click time
-                  if ((currentBalance || 0) >= chipValue) {
-                    setBetAmount((prev) => prev + chipValue);
-                    setBetHistory((prev: number[]) => [...prev, chipValue]);
-                  }
-                }}
-              />
-            </motion.div>
+                disabled={(balance?.amount ?? 0) <= chipValue} // Handle disabled state in the click handler
+                onClick={handleChip(chipValue)}
+
+              />*/}
+            </motion.button>
           );
         })}
       </motion.div>
     );
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [balance?.amount, gameState, setBetAmount]); /// eslint-disable-line react-hooks/exhaustive-deps
 
   const PlayerActions = useCallback(() => {
-    const isPlayersTurn = gameState === "player-turn";
     const options = opts(
       <div className="space-y-4 pt-4 flex flex-col items-center justify-center">
         {baseStrategy && (
@@ -286,7 +281,7 @@ export const GameplayCard = () => {
           </Button>
           <Button
             onClick={hit}
-            disabled={!canHit}
+            disabled={!canHit && gameState !== "player-turn"}
             className="bg-zinc-900 hover:bg-zinc-900 text-blue-300 text-base font-bold px-2 rounded-lg"
           >
             HIT
@@ -294,6 +289,7 @@ export const GameplayCard = () => {
           {canSplit && (
             <Button
               onClick={split}
+              disabled={gameState !== "player-turn"}
               className="bg-indigo-600 hover:bg-zinc-900 text-indigo-100 tracking-tighter text-base font-semibold px-2 rounded-lg"
             >
               SPLIT
@@ -310,7 +306,7 @@ export const GameplayCard = () => {
       </div>,
       null,
     );
-    return <>{options.get(isPlayersTurn)}</>;
+    return <>{options.get(gameState === "player-turn")}</>;
   }, [
     baseStrategy,
     canDoubleDown,
@@ -326,13 +322,35 @@ export const GameplayCard = () => {
 
   const ResultBanner = useCallback(() => {
     const options = opts(
-      <div className="h-16">
-        <div className="text-lg tracking-tight font-bold text-orange-300">
-          {getResultMessage()}
+      <div className="h-20 overflow-hidden flex items-center justify-center">
+        <div className="text-center space-y-1">
+          <motion.div
+            initial={{ y: -50 }}
+            animate={{ y: 0 }}
+            transition={{
+              type: "spring",
+              visualDuration: 0.4,
+              bounce: 0.25,
+            }}
+            className="text-xl tracking-tight font-bold text-orange-300"
+          >
+            {getResultMessage()}
+          </motion.div>
+          <motion.button
+            initial={{ y: 50 }}
+            animate={{ y: 0 }}
+            transition={{
+              type: "spring",
+              visualDuration: 0.4,
+              bounce: 0.25,
+              delay: 1,
+            }}
+            onClick={startNewBet}
+            className=""
+          >
+            continue
+          </motion.button>
         </div>
-        <button onClick={startNewBet} className="px-8">
-          Continue
-        </button>
       </div>,
       null,
     );
@@ -389,10 +407,10 @@ export const GameplayCard = () => {
         disabled={(balance?.amount || 0) < lastBetAmount}
         variant="outline"
         className={cn(
-          "flex justify-center items-center absolute h-12 w-8 flex-shrink aspect-square bottom-20 rounded-full border border-yellow-200/80 bg-neutral-900/30 text-yellow-200 hover:bg-neutral-700",
+          "flex justify-center items-center absolute h-12 w-8 flex-shrink aspect-square bottom-8 rounded-full border border-yellow-200/80 bg-neutral-900/30 text-yellow-200 hover:bg-neutral-700",
         )}
       >
-        <Icon solid name="rebet" className={`size-8`} />
+        <Icon solid name="rebet" className={`size-7`} />
       </Button>,
       <motion.div
         initial={{ scale: 0, opacity: 0, x: -100 }}
@@ -468,10 +486,6 @@ export const GameplayCard = () => {
       <div className=" ">
         <div className="relative bottom-0 h-1/4 flex gap-3 justify-center">
           <ChipArray />
-          {/*<StaticChipArray
-            onChipClick={handleChipClick}
-            balance={balance?.amount || 0}
-          />*/}
           <PlayOptions />
           <QuickBetOptions />
         </div>
@@ -492,184 +506,185 @@ export const GameplayCard = () => {
   }, []);
 
   return (
-    <AnimatePresence>
-      <CardComp className="h-[calc(100vh-64px)] portrait:min-h-[calc(100vh-64px)] space-y-0 lg:col-span-5 bg-poker-dark border-transparent rounded-b-3xl">
-        <div className="px-2 flex items-center justify-between md:px-4">
-          <CardTitle className="text-sm border border-border/20 rounded-sm p-px font-medium text-neutral-300 tracking-wider">
-            <span>BL♠CKJ♦CK</span>
-            <button
-              onClick={toggleAutoReturnToBetting}
-              className="px-4 cursor-pointer tracking-tighter text-xs"
-            >
-              {autoReturnToBetting ? "Auto" : "Manual"}
-            </button>
-          </CardTitle>
-          <CardAction>
-            <div className="flex gap-1 items-center">
-              <div className="text-sm font-medium text-neutral-300 uppercase tracking-wider">
-                $
-                <span className="tracking-tight">
-                  {balance?.amount.toLocaleString("en-US", {
-                    minimumFractionDigits: 0,
-                  }) ?? 0}
-                </span>
-              </div>
-              <button
-                onClick={resetBalance}
-                className="text-xs tracking-tight size-5 rounded-full bg-transparent border-transparent text-neutral-300"
-              >
-                <Icon name="add-circle" className="size-5" />
-              </button>
+    <CardComp className="h-[calc(100vh-64px)] portrait:min-h-[calc(100vh-64px)] space-y-0 lg:col-span-5 bg-poker-dark border-transparent rounded-b-3xl">
+      <div className="px-2 flex items-center justify-between md:px-4">
+        <CardTitle className="text-sm border border-border/20 rounded-sm p-px font-medium text-neutral-300 tracking-wider">
+          <span>BL♠CKJ♦CK</span>
+          <button
+            onClick={toggleAutoReturnToBetting}
+            className="px-4 cursor-pointer tracking-tighter text-xs"
+          >
+            {autoReturnToBetting ? "Auto" : "Manual"}
+          </button>
+        </CardTitle>
+        <CardAction>
+          <div className="flex gap-1 items-center">
+            <div className="text-sm font-medium text-neutral-300 uppercase tracking-wider">
+              $
+              <span className="tracking-tight">
+                {balance?.amount.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                }) ?? 0}
+              </span>
             </div>
-          </CardAction>
-        </div>
-        {/**/}
-        {/* === CONTENT BODY ===*/}
-        {/**/}
-        <CardContent className="bg-poker-light mx-2 border border-white/10 h-full rounded-[1.75rem]">
-          {/* Dealer Hand */}
-          <div className="space-y-0 min-h-1/4 rounded-lg border bg-zinc-700/5 flex items-center justify-center">
-            <div className="flex gap-3 items-center justify-center">
-              <div className="flex gap-2">
-                {dealerHand.cards.map((card, index) => (
-                  <PlayingCard
-                    key={index}
-                    card={card}
-                    hidden={gameState === "player-turn" && index === 1}
-                  />
-                ))}
-              </div>
+            <button
+              onClick={resetBalance}
+              className="text-xs tracking-tight size-5 rounded-full bg-transparent border-transparent text-neutral-300"
+            >
+              <Icon name="add-circle" className="size-5" />
+            </button>
+          </div>
+        </CardAction>
+      </div>
+      {/**/}
+      {/* === CONTENT BODY ===*/}
+      {/**/}
+      <CardContent className="bg-poker-light mx-2 border border-white/10 h-full rounded-[1.75rem]">
+        {/* Dealer Hand */}
+        <div className="space-y-0 min-h-1/4 rounded-lg border bg-zinc-700/5 flex items-center justify-center">
+          <div className="flex gap-3 items-center justify-center">
+            <div className="flex gap-2">
+              {dealerHand.cards.map((card, index) => (
+                <PlayingCard
+                  key={index}
+                  card={card}
+                  hidden={gameState === "player-turn" && index === 1}
+                />
+              ))}
+            </div>
 
-              <div className="text-white font-mono space-x-2 text-lg">
-                <span>
-                  {gameState === "player-turn"
-                    ? "?"
-                    : formatHandValue(dealerHand)}
+            <div className="text-white font-mono space-x-2 text-lg">
+              <span>
+                {gameState === "player-turn"
+                  ? "?"
+                  : formatHandValue(dealerHand)}
+              </span>
+              {dealerHand.isSoft && gameState !== "player-turn" && (
+                <span className="text-sm text-neutral-400"> (soft)</span>
+              )}
+              {dealerHand.isBlackjack && gameState !== "player-turn" && (
+                <span className="text-orange-300 text-sm"> BLACKJACK!</span>
+              )}
+              {dealerHand.isBust && (
+                <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
+                  BUST
                 </span>
-                {dealerHand.isSoft && gameState !== "player-turn" && (
-                  <span className="text-sm text-neutral-400"> (soft)</span>
-                )}
-                {dealerHand.isBlackjack && gameState !== "player-turn" && (
-                  <span className="text-orange-300 text-sm"> BLACKJACK!</span>
-                )}
-                {dealerHand.isBust && (
-                  <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
-                    BUST
-                  </span>
-                )}
-              </div>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Player Hands */}
-          <div className="py-0 min-h-1/2 relative flex items-center justify-center">
-            <div className="absolute bg-zinc-900 justify-center flex w-full left-0 top-0">
-              <ResultBanner />
-            </div>
-            <div>
-              {playerHands.map((hand, handIndex) => (
-                <div
-                  key={hand.id}
-                  className={cn("mb-4 p-4 rounded-xl", {
-                    "border-2 border-cyan-400":
-                      playerHands.length > 1 && handIndex === activeHandIndex,
-                  })}
-                >
-                  {playerHands.length > 1 && (
-                    <div className="text-xs text-neutral-200 font-space text-left pb-2">
-                      Hand {handIndex + 1}
-                      {handIndex === activeHandIndex &&
-                        gameState === "player-turn" && (
-                          <span className="text-cyan-300 px-3 font-medium">
-                            ACTIVE
-                          </span>
-                        )}
-                      {hand.result && (
-                        <span
-                          className={`ml-2 ${
-                            hand.result === "player-wins" ||
-                            hand.result === "player-blackjack"
-                              ? "text-white"
-                              : hand.result === "push"
-                                ? "text-sky-500"
-                                : "text-red-500"
-                          }`}
-                        >
-                          {hand.result === "player-blackjack"
-                            ? "BLACKJACK!"
-                            : hand.result === "player-wins"
-                              ? "WIN"
-                              : hand.result === "push"
-                                ? "PUSH"
-                                : "LOSE"}
+        {/* Player Hands */}
+        <div className="py-0 min-h-1/2 relative flex items-center justify-center">
+          <div className="absolute bg-zinc-900 rounded-xl justify-center flex w-full left-0 top-0">
+            <ResultBanner />
+          </div>
+          <div>
+            {playerHands.map((hand, handIndex) => (
+              <div
+                key={hand.id}
+                className={cn("mb-4 p-4 rounded-xl", {
+                  "border-2 border-cyan-400":
+                    playerHands.length > 1 && handIndex === activeHandIndex,
+                })}
+              >
+                {playerHands.length > 1 && (
+                  <div className="text-xs text-neutral-200 font-space text-left pb-2">
+                    Hand {handIndex + 1}
+                    {handIndex === activeHandIndex &&
+                      gameState === "player-turn" && (
+                        <span className="text-cyan-300 px-3 font-medium">
+                          ACTIVE
                         </span>
                       )}
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex gap-6 items-center justify-center">
-                      <PlayerHands cards={hand.cards} />
-                      <div className="text-white font-redhat text-xl">
-                        <div className="py-1 space-x-3 flex items-center tracking-tight">
-                          <span className="">
-                            {formatHandValue(hand)
-                              .split(" ")
-                              .map((e, i) =>
-                                e === "|" ? (
-                                  <span
-                                    key={i}
-                                    className="font-thin opacity-60 px-2.5"
-                                  >
-                                    {e}
-                                  </span>
-                                ) : (
-                                  e
-                                ),
-                              )}
+                    {hand.result && (
+                      <span
+                        className={`ml-2 ${
+                          hand.result === "player-wins" ||
+                          hand.result === "player-blackjack"
+                            ? "text-white"
+                            : hand.result === "push"
+                              ? "text-sky-500"
+                              : "text-red-500"
+                        }`}
+                      >
+                        {hand.result === "player-blackjack"
+                          ? "BLACKJACK!"
+                          : hand.result === "player-wins"
+                            ? "WIN"
+                            : hand.result === "push"
+                              ? "PUSH"
+                              : "LOSE"}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <div className="flex gap-6 items-center justify-center">
+                    <PlayerHands cards={hand.cards} />
+                    <div className="text-white font-redhat text-xl">
+                      <div className="py-1 space-x-3 flex items-center tracking-tight">
+                        <span className="">
+                          {formatHandValue(hand)
+                            .split(" ")
+                            .map((e, i) =>
+                              e === "|" ? (
+                                <span
+                                  key={i}
+                                  className="font-thin opacity-60 px-2.5"
+                                >
+                                  {e}
+                                </span>
+                              ) : (
+                                e
+                              ),
+                            )}
+                        </span>
+                        {hand.isSoft && (
+                          <span className="text-sm font-space px-2 text-neutral-300">
+                            soft
                           </span>
-                          {hand.isSoft && (
-                            <span className="text-sm font-space px-2 text-neutral-300">
-                              soft
-                            </span>
-                          )}
-                          {hand.isBlackjack && (
-                            <span className="text-white text-sm">
-                              {" "}
-                              BLACKJACK!
-                            </span>
-                          )}
-                          {hand.isBust && (
-                            <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
-                              BUST!
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-neutral-100 py-1.5 border-t-3 border-poker-dark">
-                          ${hand.betAmount}
-                        </div>
+                        )}
+                        {hand.isBlackjack && (
+                          <span className="text-white text-sm">
+                            {" "}
+                            BLACKJACK!
+                          </span>
+                        )}
+                        {hand.isBust && (
+                          <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
+                            BUST!
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-neutral-100 py-1.5 border-t-3 border-poker-dark">
+                        ${hand.betAmount}
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div>
-              <BetModifier />
-            </div>
+              </div>
+            ))}
           </div>
+          <div>
+            <BetModifier />
+          </div>
+        </div>
 
-          <BettingControls />
-          {/* Game Actions */}
-          <PlayerActions />
+        <BettingControls />
+        {/* Game Actions */}
 
-          {/* Dealer Turn */}
+        {/*<AnimatePresence>*/}
+        <PlayerActions />
+        {/*</AnimatePresence>*/}
 
-          {/* Game Over Message */}
+        {/* Dealer Turn */}
 
-          {/* Current Bet Display */}
-        </CardContent>
-      </CardComp>
-    </AnimatePresence>
+        {/* Game Over Message */}
+
+        {/* Current Bet Display */}
+      </CardContent>
+    </CardComp>
   );
 };
 

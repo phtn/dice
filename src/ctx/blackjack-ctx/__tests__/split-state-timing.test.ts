@@ -106,7 +106,7 @@ describe('Split State Timing Issues', () => {
     // Verify overall game logic
     expect(playerWins).toBe(1);
     expect(dealerWins).toBe(1);
-    expect(totalWinAmount).toBe(100); // Lost 100 on first hand, won 200 on second hand
+    expect(totalWinAmount).toBe(200); // Hand 1: 0, Hand 2: 200 (bet + winnings)
 
     console.log('Hand 1 result (16 vs 18):', updatedHands[0].result);
     console.log('Hand 2 result (19 vs 18):', updatedHands[1].result);

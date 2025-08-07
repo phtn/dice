@@ -90,18 +90,35 @@ describe('Dealer Play Integration', () => {
 
     // Dealer scenarios that should all result in standing
     const dealerScenarios = [
-      { value: 17, shouldHit: false },
-      { value: 18, shouldHit: false },
-      { value: 19, shouldHit: false },
-      { value: 20, shouldHit: false },
-      { value: 21, shouldHit: false }
+      { 
+        value: 17, 
+        shouldHit: false,
+        cards: [{ suit: 'diamonds' as const, rank: '10' as const, value: 10 }, { suit: 'clubs' as const, rank: '7' as const, value: 7 }]
+      },
+      { 
+        value: 18, 
+        shouldHit: false,
+        cards: [{ suit: 'diamonds' as const, rank: '10' as const, value: 10 }, { suit: 'clubs' as const, rank: '8' as const, value: 8 }]
+      },
+      { 
+        value: 19, 
+        shouldHit: false,
+        cards: [{ suit: 'diamonds' as const, rank: '10' as const, value: 10 }, { suit: 'clubs' as const, rank: '9' as const, value: 9 }]
+      },
+      { 
+        value: 20, 
+        shouldHit: false,
+        cards: [{ suit: 'diamonds' as const, rank: '10' as const, value: 10 }, { suit: 'clubs' as const, rank: 'Q' as const, value: 10 }]
+      },
+      { 
+        value: 21, 
+        shouldHit: false,
+        cards: [{ suit: 'diamonds' as const, rank: '7' as const, value: 7 }, { suit: 'clubs' as const, rank: '7' as const, value: 7 }, { suit: 'hearts' as const, rank: '7' as const, value: 7 }] // 3 cards = not blackjack
+      }
     ];
 
     dealerScenarios.forEach(scenario => {
-      const dealerHand = engine.createHand([
-        { suit: 'diamonds' as const, rank: '10' as const, value: 10 },
-        { suit: 'clubs' as const, rank: (scenario.value - 10).toString() as '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A', value: scenario.value - 10 }
-      ]);
+      const dealerHand = engine.createHand(scenario.cards);
       
       expect(dealerHand.value).toBe(scenario.value);
       expect(engine.shouldDealerHit(dealerHand)).toBe(scenario.shouldHit);

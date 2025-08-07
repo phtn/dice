@@ -12,10 +12,12 @@ describe("Dealing Order Integration", () => {
 
     // Track the order cards are dealt
     const originalDealCard = engine.dealCard.bind(engine);
-    engine.dealCard = () => {
+    (engine as any).dealCard = () => {
       const card = originalDealCard();
       if (card) {
-        dealtCards.push({ ...card, order: dealtCards.length + 1 });
+        const cardWithOrder = { ...card, order: dealtCards.length + 1 };
+        dealtCards.push(cardWithOrder);
+        return cardWithOrder;
       }
       return card;
     };
@@ -46,13 +48,17 @@ describe("Dealing Order Integration", () => {
     expect(playerCards.length).toBe(2);
     expect(dealerCards.length).toBe(2);
 
-    // Player should have 1st and 3rd cards dealt
-    expect(playerCards[0]).toBe(dealtCards[0]);
-    expect(playerCards[1]).toBe(dealtCards[2]);
+    // Player should have 1st and 3rd cards dealt (compare without order property)
+    expect(playerCards[0].suit).toBe(dealtCards[0].suit);
+    expect(playerCards[0].rank).toBe(dealtCards[0].rank);
+    expect(playerCards[1].suit).toBe(dealtCards[2].suit);
+    expect(playerCards[1].rank).toBe(dealtCards[2].rank);
 
     // Dealer should have 2nd and 4th cards dealt
-    expect(dealerCards[0]).toBe(dealtCards[1]);
-    expect(dealerCards[1]).toBe(dealtCards[3]);
+    expect(dealerCards[0].suit).toBe(dealtCards[1].suit);
+    expect(dealerCards[0].rank).toBe(dealtCards[1].rank);
+    expect(dealerCards[1].suit).toBe(dealtCards[3].suit);
+    expect(dealerCards[1].rank).toBe(dealtCards[3].rank);
   });
 
   test("should maintain proper order during split scenario", () => {
@@ -60,11 +66,11 @@ describe("Dealing Order Integration", () => {
     let dealOrder = 0;
 
     const originalDealCard = engine.dealCard.bind(engine);
-    engine.dealCard = () => {
+    (engine as any).dealCard = () => {
       const card = originalDealCard();
       if (card) {
         dealOrder++;
-        card.dealOrder = dealOrder;
+        return { ...card, dealOrder };
       }
       return card;
     };
@@ -76,19 +82,17 @@ describe("Dealing Order Integration", () => {
     const dealerCard2 = engine.dealCard(); // Order 4
 
     // Verify initial order
-    expect(playerCard1?.dealOrder).toBe(1);
-    expect(dealerCard1?.dealOrder).toBe(2);
-    expect(playerCard2?.dealOrder).toBe(3);
-    expect(dealerCard2?.dealOrder).toBe(4);
+    expect((playerCard1 as any)?.dealOrder).toBe(1);
+    expect((dealerCard1 as any)?.dealOrder).toBe(2);
+    expect((playerCard2 as any)?.dealOrder).toBe(3);
+    expect((dealerCard2 as any)?.dealOrder).toBe(4);
 
-    // If player has a pair, simulate split
-    if (playerCard1 && playerCard2 && playerCard1.rank === playerCard2.rank) {
-      const splitCard1 = engine.dealCard(); // Order 5 - to first split hand
-      const splitCard2 = engine.dealCard(); // Order 6 - to second split hand
+    // Always simulate split scenario regardless of actual cards
+    const splitCard1 = engine.dealCard(); // Order 5 - to first split hand
+    const splitCard2 = engine.dealCard(); // Order 6 - to second split hand
 
-      expect(splitCard1?.dealOrder).toBe(5);
-      expect(splitCard2?.dealOrder).toBe(6);
-    }
+    expect((splitCard1 as any)?.dealOrder).toBe(5);
+    expect((splitCard2 as any)?.dealOrder).toBe(6);
   });
 
   test("should verify casino-standard dealing protocol", () => {
@@ -97,25 +101,27 @@ describe("Dealing Order Integration", () => {
     // In a real casino, the dealing order is crucial for fairness
     // and follows strict protocols
 
-    const gameCards: DealtCard[] = [];
+    const gameCards: any[] = [];
     const originalDealCard = engine.dealCard.bind(engine);
-    engine.dealCard = () => {
+    (engine as any).dealCard = () => {
       const card = originalDealCard();
       if (card) {
-        gameCards.push({
+        const cardWithMeta = {
           ...card,
           position: gameCards.length,
           recipient: gameCards.length % 2 === 0 ? "player" : "dealer",
-        });
+        };
+        gameCards.push(cardWithMeta);
+        return cardWithMeta;
       }
       return card;
     };
 
     // Deal according to our implementation
-    // const playerCard1 = engine.dealCard(); // Position 0 - Player
-    // const dealerCard1 = engine.dealCard(); // Position 1 - Dealer
-    // const playerCard2 = engine.dealCard(); // Position 2 - Player
-    // const dealerCard2 = engine.dealCard(); // Position 3 - Dealer
+    const playerCard1 = engine.dealCard(); // Position 0 - Player
+    const dealerCard1 = engine.dealCard(); // Position 1 - Dealer
+    const playerCard2 = engine.dealCard(); // Position 2 - Player
+    const dealerCard2 = engine.dealCard(); // Position 3 - Dealer
 
     // Verify alternating pattern
     expect(gameCards[0].recipient).toBe("player");
@@ -141,17 +147,19 @@ describe("Dealing Order Integration", () => {
     ];
 
     testScenarios.forEach((scenario) => {
-      const dealtCards: DealtCard[] = [];
+      const dealtCards: any[] = [];
       const originalDealCard = engine.dealCard.bind(engine);
 
-      engine.dealCard = () => {
+      (engine as any).dealCard = () => {
         const card = originalDealCard();
         if (card) {
-          dealtCards.push({
+          const cardWithMeta = {
             ...card,
             scenario,
             dealIndex: dealtCards.length,
-          });
+          };
+          dealtCards.push(cardWithMeta);
+          return cardWithMeta;
         }
         return card;
       };

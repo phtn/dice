@@ -130,17 +130,14 @@ export class BlackjackEngine {
     const lowValue = nonAceValue + aces;
 
     // Calculate high value (optimal ace usage)
-    let highValue = nonAceValue;
+    // Start with all aces as 1, then try to use one as 11 if it doesn't bust
+    let highValue = nonAceValue + aces; // All aces as 1
     let acesUsedAsEleven = 0;
 
-    // Add aces optimally
-    for (let i = 0; i < aces; i++) {
-      if (highValue + 11 <= 21) {
-        highValue += 11;
-        acesUsedAsEleven++;
-      } else {
-        highValue += 1;
-      }
+    // Try to use one ace as 11 if it doesn't bust
+    if (aces > 0 && highValue + 10 <= 21) { // +10 because we're changing one ace from 1 to 11
+      highValue += 10; // Change one ace from 1 to 11
+      acesUsedAsEleven = 1;
     }
 
     // The optimal value is the high value
@@ -185,14 +182,14 @@ export class BlackjackEngine {
     | "push"
     | "player-blackjack"
     | "dealer-blackjack" {
-    // Check for blackjacks first
+    // Check for busts first - if player busts, dealer wins immediately
+    if (playerHand.isBust) return "dealer-wins";
+    if (dealerHand.isBust) return "player-wins";
+
+    // Check for blackjacks (only if neither busted)
     if (playerHand.isBlackjack && dealerHand.isBlackjack) return "push";
     if (playerHand.isBlackjack) return "player-blackjack";
     if (dealerHand.isBlackjack) return "dealer-blackjack";
-
-    // Check for busts
-    if (playerHand.isBust) return "dealer-wins";
-    if (dealerHand.isBust) return "player-wins";
 
     // Compare values
     if (playerHand.value > dealerHand.value) return "player-wins";

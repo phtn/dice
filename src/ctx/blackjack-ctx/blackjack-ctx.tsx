@@ -179,8 +179,9 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
   }, []);
 
   const processGameEnd = useCallback(
-    (currentDealerHand?: Hand) => {
+    (currentDealerHand?: Hand, currentPlayerHands?: PlayerHand[]) => {
       const dealerHandToUse = currentDealerHand || dealerHand;
+      const playerHandsToUse = currentPlayerHands || playerHands;
       let totalWinAmount = 0;
       let playerWins = 0;
       let dealerWins = 0;
@@ -189,7 +190,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       let dealerBlackjacks = 0;
 
       // Calculate results for each hand
-      const updatedHands = playerHands.map((hand) => {
+      const updatedHands = playerHandsToUse.map((hand) => {
         let result: GameResult;
         let winAmount = 0;
 
@@ -314,7 +315,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     ],
   );
 
-  const dealerPlay = useCallback(() => {
+  const dealerPlay = useCallback((currentPlayerHands?: PlayerHand[]) => {
     setGameState("dealer-turn");
 
     const playDealerRecursive = (currentDealerHand: Hand) => {
@@ -337,14 +338,14 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
           return;
         } else {
           // No more cards available, end game
-          processGameEnd(currentDealerHand);
+          processGameEnd(currentDealerHand, currentPlayerHands);
           return;
         }
       }
 
       // Dealer is done (17 or higher), process all hands
       console.log("Dealer stops at:", currentDealerHand.value);
-      processGameEnd(currentDealerHand);
+      processGameEnd(currentDealerHand, currentPlayerHands);
     };
 
     // Start dealer play after a short delay
@@ -430,9 +431,9 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       } else {
         // Check if all hands are busted - if so, skip dealer play
         if (checkIfAllHandsBusted(handsToUse)) {
-          processGameEnd();
+          processGameEnd(undefined, handsToUse);
         } else {
-          dealerPlay();
+          dealerPlay(handsToUse);
         }
       }
     },
@@ -458,9 +459,9 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       } else {
         // Check if all hands are busted - if so, skip dealer play
         if (checkIfAllHandsBusted(updatedHands)) {
-          processGameEnd();
+          processGameEnd(undefined, updatedHands);
         } else {
-          dealerPlay();
+          dealerPlay(updatedHands);
         }
       }
     },
@@ -529,7 +530,14 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     };
 
     setPlayerHands(updatedHands);
-    moveToNextHand();
+
+    // Check if the doubled hand busted
+    if (newHand.isBust) {
+      // Add delay to show the busting card before proceeding
+      setTimeout(() => handlePostBust(updatedHands), 1000);
+    } else {
+      moveToNextHand(updatedHands);
+    }
   }, [
     gameState,
     activeHandIndex,
@@ -538,6 +546,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     updateBalance,
     engine,
     moveToNextHand,
+    handlePostBust,
   ]);
 
   const split = useCallback(() => {
@@ -592,7 +601,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       setActiveHandIndex(nextPlayableIndex);
     } else {
       // No playable hands left, start dealer play
-      dealerPlay();
+      dealerPlay(updatedHands);
     }
   }, [
     gameState,

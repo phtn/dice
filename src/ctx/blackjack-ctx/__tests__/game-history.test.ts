@@ -19,8 +19,11 @@ const localStorageMock = {
   }
 };
 
+// Mock both localStorage and window for testing
 // @ts-expect-error - Mocking localStorage for testing
 global.localStorage = localStorageMock;
+// @ts-expect-error - Mocking window for testing
+global.window = { localStorage: localStorageMock };
 
 describe('Game History Manager', () => {
   beforeEach(() => {

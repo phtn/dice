@@ -132,17 +132,18 @@ describe("Blackjack Dealing Order", () => {
     // Create engine with very few cards
     const smallEngine = new BlackjackEngine(1);
 
-    // Deal most of the deck
-    for (let i = 0; i < 50; i++) {
+    // Deal most of the deck - but the engine auto-shuffles at 25% (13 cards remaining)
+    // So we need to deal 39 cards to get to 13 remaining
+    for (let i = 0; i < 39; i++) {
       smallEngine.dealCard();
     }
 
-    expect(smallEngine.getRemainingCards()).toBe(2);
+    expect(smallEngine.getRemainingCards()).toBe(13);
 
-    // Try to deal initial hand (needs 4 cards, but only 2 remain)
+    // Try to deal initial hand (needs 4 cards)
     const playerCard1 = smallEngine.dealCard(); // Should work
     const dealerCard1 = smallEngine.dealCard(); // Should work
-    const playerCard2 = smallEngine.dealCard(); // Should trigger shuffle and work
+    const playerCard2 = smallEngine.dealCard(); // Should work - but triggers shuffle
     const dealerCard2 = smallEngine.dealCard(); // Should work from reshuffled deck
 
     expect(playerCard1).toBeTruthy();
@@ -150,7 +151,7 @@ describe("Blackjack Dealing Order", () => {
     expect(playerCard2).toBeTruthy();
     expect(dealerCard2).toBeTruthy();
 
-    // Should have reshuffled
+    // Should have reshuffled when we got to 25% (13 cards), so now we have more cards
     expect(smallEngine.getRemainingCards()).toBeGreaterThan(40);
   });
 
@@ -158,7 +159,7 @@ describe("Blackjack Dealing Order", () => {
     const dealtCards: Card[] = [];
     const originalDealCard = engine.dealCard.bind(engine);
 
-    engine.dealCard = () => {
+    (engine as any).dealCard = () => {
       const card = originalDealCard();
       if (card) {
         dealtCards.push(card);
@@ -167,10 +168,10 @@ describe("Blackjack Dealing Order", () => {
     };
 
     // Deal initial cards
-    // const playerCard1 = engine.dealCard();
-    // const dealerCard1 = engine.dealCard();
-    // const playerCard2 = engine.dealCard();
-    // const dealerCard2 = engine.dealCard();
+    const playerCard1 = engine.dealCard();
+    const dealerCard1 = engine.dealCard();
+    const playerCard2 = engine.dealCard();
+    const dealerCard2 = engine.dealCard();
 
     // All cards should be unique (no duplicates)
     const cardStrings = dealtCards.map((card) => `${card.rank}${card.suit}`);
@@ -188,7 +189,7 @@ describe("Blackjack Dealing Order", () => {
       const gameCards: Card[] = [];
       const originalDealCard = engine.dealCard.bind(engine);
 
-      engine.dealCard = () => {
+      (engine as any).dealCard = () => {
         const card = originalDealCard();
         if (card) {
           gameCards.push(card);
@@ -202,7 +203,7 @@ describe("Blackjack Dealing Order", () => {
       const playerCard2 = engine.dealCard();
       const dealerCard2 = engine.dealCard();
 
-      gameResults.push(gameCards);
+      gameResults.push([...gameCards]); // Create a copy
 
       // Verify order for this game
       expect(gameCards.length).toBe(4);

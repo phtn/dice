@@ -1,10 +1,8 @@
 import { ClassName } from "@/app/types";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 
 interface ChipProps {
   value: number;
-  onClick: VoidFunction;
   selected?: boolean;
   disabled?: boolean;
   className?: ClassName;
@@ -30,12 +28,11 @@ const getChipColor = (value: number) => {
   }
 };
 
-export const Chipp = ({ value, selected, onClick, disabled }: ChipProps) => {
+export const Chipp = ({ value, selected, disabled }: ChipProps) => {
   const colorClass = getChipColor(value);
 
   return (
     <button
-      onClick={onClick}
       disabled={disabled}
       className={`
         relative w-12 h-12 rounded-full border-4 flex items-center justify-center
@@ -54,35 +51,14 @@ export const Chipp = ({ value, selected, onClick, disabled }: ChipProps) => {
   );
 };
 
-export const Chip = ({
-  value,
-  selected,
-  onClick,
-  disabled,
-  className,
-}: ChipProps) => {
+export const Chip = ({ value, className }: ChipProps) => {
   const colorClass = getChipColor(value);
   return (
-    <motion.button
-      // initial={{ scale: 0, opacity: 0 }}
-      // animate={{ scale: 1, opacity: 1 }}
-      // transition={{
-      //   type: "spring",
-      //   visualDuration: 0.4,
-      // }}
-      onClick={onClick}
-      disabled={disabled}
+    <div
       className={cn(
         "rounded-full border border-zinc-400",
         "relative w-10 h-10 flex items-center justify-center overflow-hidden",
         "hover:scale-105 cursor-pointer text-white text-xs font-bold transition-all duration-200",
-        {
-          "ring-2 ring-white/40 ring-offset-2 ring-offset-neutral-900 scale-110":
-            selected,
-          "opacity-50 cursor-not-allowed": disabled,
-          "hover:ring-1 hover:ring-white hover:ring-offset-1 hover:ring-offset-neutral-900":
-            !disabled && !selected,
-        },
         colorClass,
       )}
     >
@@ -119,10 +95,10 @@ export const Chip = ({
           ></path>
         </g>
       </svg>
-      <span className="text-white font-space font-medium text-base absolute -tracking-widest drop-shadow-sm">
+      <span className="text-white font-space font-medium text-sm absolute -tracking-widest drop-shadow-xs">
         {value}
       </span>
-    </motion.button>
+    </div>
   );
 };
 
