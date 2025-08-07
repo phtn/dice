@@ -25,7 +25,9 @@ export const TopUpLink = () => {
             className="absolute size-5 text-emerald-200 blur-xs"
           />
         </div>
-        <span className="hidden md:flex">top-up</span>
+        <span className="hidden md:flex whitespace-nowrap tracking-tighter">
+          top-up
+        </span>
       </Link>
     </div>
   );

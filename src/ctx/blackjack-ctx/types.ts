@@ -20,6 +20,8 @@ export interface Card {
 export interface Hand {
   cards: Card[];
   value: number;
+  lowValue: number; // All aces as 1
+  highValue: number; // Optimal ace usage
   isBlackjack: boolean;
   isBust: boolean;
   isSoft: boolean; // Contains an ace counted as 11

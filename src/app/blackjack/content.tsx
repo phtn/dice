@@ -9,7 +9,7 @@ import { ShoeCard } from "./_components/shoe-card";
 
 export const Content = () => {
   return (
-    <div className="px-4 space-y-6">
+    <div className="md:px-4 space-y-6">
       {/* Main Blackjack Game Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Shoe Status Card */}
@@ -37,12 +37,12 @@ export const Content = () => {
 };
 
 const DesktopShoeCard = () => (
-  <div className="lg:col-span-2 hidden lg:flex w-full items-start justify-center">
+  <div className="lg:col-span-3 hidden lg:flex w-full items-start justify-center">
     <ShoeCard />
   </div>
 );
 const MobileShoeCard = () => (
-  <div className="lg:col-span-2 lg:hidden">
+  <div className="lg:col-span-3 lg:hidden">
     <ShoeCard />
   </div>
 );

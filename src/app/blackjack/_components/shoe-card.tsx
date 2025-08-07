@@ -79,10 +79,10 @@ export const ShoeCard = () => {
   const cardsByCategory = getCardsByCategory();
 
   return (
-    <Card className="lg:col-span-3 bg-neutral-900/80 border-transparent">
-      <CardHeader className="pb-3">
+    <Card className="bg-neutral-900/80 border-transparent lg:col-space-3 w-full">
+      <CardHeader className="lg:px-1">
         <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
-          SHOE STATUS
+          SHOE
         </CardTitle>
         <CardAction>
           <div className="space-x-2 flex items-center">
@@ -114,11 +114,11 @@ export const ShoeCard = () => {
         </CardAction>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 lg:px-1">
         {/* Shoe Overview */}
-        <div className=" grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-6 w-full">
           {/* Total Cards */}
-          <StatCard label={"total cards"} value={totalCards} />
+          <StatCard label={"total"} value={totalCards} />
 
           {/* Remaining Cards */}
           <StatCard label={"remaining"} value={remainingCards} />
@@ -127,7 +127,7 @@ export const ShoeCard = () => {
 
           <StatCard label={"used"} value={usedCards} />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 py-4">
           {/* Progress Bar */}
           <ProgressBar title="Shoe Progress" value={usedPercentage} />
           <div className="justify-between hidden text-xs text-neutral-500">
@@ -176,20 +176,6 @@ export const ShoeCard = () => {
             </div>
           ))}
         </div>
-
-        {/* Shuffle Button */}
-        <div className="pt-2">
-          <Button
-            size="lg"
-            onClick={shuffleDeck}
-            variant={"secondary"}
-            disabled={gameState !== "betting"}
-            className="w-full text-xs py-4"
-          >
-            Shuffle Deck
-          </Button>
-        </div>
-
         {/* Penetration Warning */}
         {remainingPercentage < 25 && (
           <div className="bg-yellow-900/20 border border-yellow-600/30 rounded p-2">
@@ -198,6 +184,18 @@ export const ShoeCard = () => {
             </div>
           </div>
         )}
+        {/* Shuffle Button */}
+        <div className="pt-2">
+          <Button
+            size="xl"
+            onClick={shuffleDeck}
+            variant={"secondary"}
+            disabled={gameState !== "betting"}
+            className="w-full text-xs py-4"
+          >
+            Shuffle Deck
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

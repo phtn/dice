@@ -53,6 +53,11 @@ interface BlackjackCtxValues {
   canStand: boolean;
   canSplit: boolean;
 
+  // Settings
+  autoReturnToBetting: boolean;
+  toggleAutoReturnToBetting: VoidFunction;
+  startNewBet: VoidFunction;
+
   // Stats
   stats: GameStats;
 
@@ -96,6 +101,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
   const [dealerHand, setDealerHand] = useState<Hand>({
     cards: [],
     value: 0,
+    lowValue: 0,
+    highValue: 0,
     isBlackjack: false,
     isBust: false,
     isSoft: false,
@@ -104,6 +111,13 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   // Betting
   const [betAmount, setBetAmount] = useState(0);
+
+  // Settings
+  const [autoReturnToBetting, setAutoReturnToBetting] = useState(true);
+  const toggleAutoReturnToBetting = useCallback(
+    () => setAutoReturnToBetting((prev) => !prev),
+    [],
+  );
 
   // Stats
   const [stats, setStats] = useState<GameStats>({
@@ -143,6 +157,23 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
         result === "player-blackjack" ? prev.blackjacks + 1 : prev.blackjacks,
       totalWinnings: prev.totalWinnings + winAmount,
     }));
+  }, []);
+
+  const startNewBet = useCallback(() => {
+    setGameState("betting");
+    setGameResult(null);
+    setPlayerHands([]);
+    setDealerHand({
+      cards: [],
+      value: 0,
+      lowValue: 0,
+      highValue: 0,
+      isBlackjack: false,
+      isBust: false,
+      isSoft: false,
+    });
+    setActiveHandIndex(0);
+    setBetAmount(0);
   }, []);
 
   const processGameEnd = useCallback(
@@ -263,23 +294,22 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
         totalWinAmount,
       );
 
-      // Automatically return to betting phase after a short delay
-      setTimeout(() => {
-        setGameState("betting");
-        setGameResult(null);
-        setPlayerHands([]);
-        setDealerHand({
-          cards: [],
-          value: 0,
-          isBlackjack: false,
-          isBust: false,
-          isSoft: false,
-        });
-        setActiveHandIndex(0);
-        setBetAmount(0);
-      }, 3000);
+      // Automatically return to betting phase after a short delay if enabled
+      if (autoReturnToBetting) {
+        setTimeout(() => {
+          startNewBet();
+        }, 3000);
+      }
     },
-    [playerHands, dealerHand, engine, updateBalance, updateStats],
+    [
+      engine,
+      dealerHand,
+      playerHands,
+      updateStats,
+      startNewBet,
+      updateBalance,
+      autoReturnToBetting,
+    ],
   );
 
   const dealerPlay = useCallback(() => {
@@ -414,17 +444,17 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     ],
   );
 
-  const handlePostBust = useCallback(() => {
+  const handlePostBust = useCallback((updatedHands: PlayerHand[]) => {
     const nextPlayableIndex = findNextPlayableHand(
       activeHandIndex + 1,
-      playerHands,
+      updatedHands,
     );
 
     if (nextPlayableIndex !== -1) {
       setActiveHandIndex(nextPlayableIndex);
     } else {
       // Check if all hands are busted - if so, skip dealer play
-      if (checkIfAllHandsBusted(playerHands)) {
+      if (checkIfAllHandsBusted(updatedHands)) {
         processGameEnd();
       } else {
         dealerPlay();
@@ -432,7 +462,6 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     }
   }, [
     activeHandIndex,
-    playerHands,
     findNextPlayableHand,
     checkIfAllHandsBusted,
     processGameEnd,
@@ -460,7 +489,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
     if (newHand.isBust) {
       // Add delay to show the busting card before proceeding
-      setTimeout(handlePostBust, 1000);
+      setTimeout(() => handlePostBust(updatedHands), 1000);
     }
   }, [gameState, activeHandIndex, playerHands, engine, handlePostBust]);
 
@@ -578,6 +607,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     setDealerHand({
       cards: [],
       value: 0,
+      lowValue: 0,
+      highValue: 0,
       isBlackjack: false,
       isBust: false,
       isSoft: false,
@@ -624,9 +655,19 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     [gameState, currentPlayerHand, engine, balance?.amount, playerHands.length],
   );
 
-  const remainingCards = useMemo(() => engine.getRemainingCards(), [engine]);
-  const totalCards = useMemo(() => engine.getTotalCards(), [engine]);
-  const usedCards = useMemo(() => engine.getUsedCards(), [engine]);
+  const remainingCards = useMemo(
+    () => engine.getRemainingCards(),
+    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const totalCards = useMemo(
+    () => engine.getTotalCards(),
+    [engine, deckCount], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const usedCards = useMemo(
+    () => engine.getUsedCards(),
+    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const setDeckCount = useCallback(
     (count: number) => {
@@ -646,11 +687,12 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   const getRemainingCardsByRank = useCallback(
     () => engine.getRemainingCardsByRank(),
-    [engine],
+    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
   const getUsedCardsByRank = useCallback(
     () => engine.getUsedCardsByRank(),
-    [engine],
+    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const getCardDisplay = useCallback(
@@ -693,6 +735,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       canHit,
       canStand,
       canSplit,
+      autoReturnToBetting,
+      toggleAutoReturnToBetting,
       stats,
       remainingCards,
       totalCards,
@@ -708,6 +752,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       getRecentGames,
       clearGameHistory,
       exportGameHistory,
+      startNewBet,
     }),
     [
       gameState,
@@ -726,6 +771,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       canHit,
       canStand,
       canSplit,
+      autoReturnToBetting,
+      toggleAutoReturnToBetting,
       stats,
       remainingCards,
       totalCards,
@@ -741,6 +788,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       getRecentGames,
       clearGameHistory,
       exportGameHistory,
+      startNewBet,
     ],
   );
 

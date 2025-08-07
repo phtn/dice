@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GameStats, useBlackjackCtx } from "@/ctx/blackjack-ctx";
 import {
@@ -8,6 +8,7 @@ import {
   GameHistoryEntry,
 } from "@/ctx/blackjack-ctx/game-history";
 import { StrategyGuide } from "@/components/blackjack/strategy-guide";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const InfoCard = () => {
   const { getHistoryStats, getRecentGames, clearGameHistory } =
@@ -18,27 +19,32 @@ export const InfoCard = () => {
   const recentGames = getRecentGames(20);
 
   return (
-    <Card className="lg:col-span-4 bg-neutral-900/70 border-transparent pt-0">
-      {/*Account Balance */}
-      {/*<StatCard
-              label="Account Balance"
-              value={balance?.amount}
-              className="my-0"
-            />*/}
-      {/*Separator*/}
-      {/*<div className="h-px bg-zinc-800 w-full" />*/}
+    <Tabs className="lg:col-span-4 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden">
+      <TabsList className="dark:bg-zinc-700/20 inset-shadow-[0_0.5px_rgb(255_255_255/0.20)] space-x-6 overflow-hidden">
+        <TabsTrigger
+          value="stats"
+          className="border-none shadow-none bg-transparent"
+        >
+          Game Stats
+        </TabsTrigger>
+        <TabsTrigger value="strategy">Strategy Guide</TabsTrigger>
+        <TabsTrigger value="history">Recent Games</TabsTrigger>
+      </TabsList>
 
-      {/*Game Statistics*/}
       <CardContent className="space-y-6 lg:px-2 rounded-xl">
-        {/* Strategy Guide */}
-        <StrategyGuide />
-        <GameStatsSection stats={historyStats} />
-        <RecentGamesSection
-          games={recentGames}
-          onClearHistory={clearGameHistory}
-        />
+        <TabsContent value="stats">
+          <GameStatsSection stats={historyStats} />
+          <RecentGamesSection
+            games={recentGames}
+            onClearHistory={clearGameHistory}
+          />
+        </TabsContent>
+        <TabsContent value="strategy">
+          <StrategyGuide />
+        </TabsContent>
+        <TabsContent value="history"></TabsContent>
       </CardContent>
-    </Card>
+    </Tabs>
   );
 };
 

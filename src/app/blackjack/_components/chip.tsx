@@ -1,5 +1,6 @@
 import { ClassName } from "@/app/types";
 import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 
 interface ChipProps {
   value: number;
@@ -62,12 +63,18 @@ export const Chip = ({
 }: ChipProps) => {
   const colorClass = getChipColor(value);
   return (
-    <button
+    <motion.button
+      // initial={{ scale: 0, opacity: 0 }}
+      // animate={{ scale: 1, opacity: 1 }}
+      // transition={{
+      //   type: "spring",
+      //   visualDuration: 0.4,
+      // }}
       onClick={onClick}
       disabled={disabled}
       className={cn(
         "rounded-full border border-zinc-400",
-        "relative w-12 h-12 flex items-center justify-center overflow-hidden",
+        "relative w-10 h-10 flex items-center justify-center overflow-hidden",
         "hover:scale-105 cursor-pointer text-white text-xs font-bold transition-all duration-200",
         {
           "ring-2 ring-white/40 ring-offset-2 ring-offset-neutral-900 scale-110":
@@ -115,6 +122,8 @@ export const Chip = ({
       <span className="text-white font-space font-medium text-base absolute -tracking-widest drop-shadow-sm">
         {value}
       </span>
-    </button>
+    </motion.button>
   );
 };
+
+export const degToRad = (deg: number) => (deg * Math.PI) / 180;

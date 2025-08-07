@@ -108,32 +108,43 @@ export class BlackjackEngine {
 
   calculateHandValue(cards: Card[]): {
     value: number;
+    lowValue: number;
+    highValue: number;
     isSoft: boolean;
     isBlackjack: boolean;
     isBust: boolean;
   } {
-    let value = 0;
+    let nonAceValue = 0;
     let aces = 0;
-    let acesUsedAsEleven = 0;
 
-    // Count non-ace cards first
+    // Count non-ace cards and aces separately
     for (const card of cards) {
       if (card.rank === "A") {
         aces++;
       } else {
-        value += card.value;
+        nonAceValue += card.value;
       }
     }
 
-    // Add aces
+    // Calculate low value (all aces as 1)
+    const lowValue = nonAceValue + aces;
+
+    // Calculate high value (optimal ace usage)
+    let highValue = nonAceValue;
+    let acesUsedAsEleven = 0;
+
+    // Add aces optimally
     for (let i = 0; i < aces; i++) {
-      if (value + 11 <= 21) {
-        value += 11;
+      if (highValue + 11 <= 21) {
+        highValue += 11;
         acesUsedAsEleven++;
       } else {
-        value += 1;
+        highValue += 1;
       }
     }
+
+    // The optimal value is the high value
+    const value = highValue;
 
     // Hand is soft if it contains at least one ace counted as 11
     const isSoft = acesUsedAsEleven > 0;
@@ -141,16 +152,18 @@ export class BlackjackEngine {
     const isBlackjack = cards.length === 2 && value === 21;
     const isBust = value > 21;
 
-    return { value, isSoft, isBlackjack, isBust };
+    return { value, lowValue, highValue, isSoft, isBlackjack, isBust };
   }
 
   createHand(cards: Card[] = []): Hand {
-    const { value, isSoft, isBlackjack, isBust } =
+    const { value, lowValue, highValue, isSoft, isBlackjack, isBust } =
       this.calculateHandValue(cards);
 
     return {
       cards,
       value,
+      lowValue,
+      highValue,
       isSoft,
       isBlackjack,
       isBust,
