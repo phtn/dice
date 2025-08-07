@@ -23,7 +23,7 @@ export const InfoCard = () => {
       defaultValue={"stats"}
       className="lg:col-span-4 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden"
     >
-      <TabsList className="dark:bg-zinc-700/20 inset-shadow-[0_0.5px_rgb(255_255_255/0.20)] space-x-6 overflow-hidden">
+      <TabsList className="dark:bg-zinc-700/20 w-full inset-shadow-[0_0.5px_rgb(255_255_255/0.20)] space-x-6 overflow-hidden">
         <TabsTrigger
           value="stats"
           className="border-none shadow-none bg-transparent"
@@ -31,7 +31,7 @@ export const InfoCard = () => {
           Game Stats
         </TabsTrigger>
         <TabsTrigger value="strategy">Strategy Guide</TabsTrigger>
-        <TabsTrigger value="history">Recent Games</TabsTrigger>
+        <TabsTrigger value="rules">Game Rules</TabsTrigger>
       </TabsList>
 
       <CardContent className="space-y-6 lg:px-2 rounded-xl">
@@ -45,7 +45,9 @@ export const InfoCard = () => {
         <TabsContent value="strategy">
           <StrategyGuide />
         </TabsContent>
-        <TabsContent value="history"></TabsContent>
+        <TabsContent value="rules">
+          <GameConcept />
+        </TabsContent>
       </CardContent>
     </Tabs>
   );
@@ -59,8 +61,8 @@ const GameStatsSection = ({ stats }: GameStatsProps) => {
   return (
     <div className="bg-zinc-0">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-        <span className="text-xs text-green-500 font-medium">
+        <div className="w-2 h-2 bg-cyan-300 rounded-full"></div>
+        <span className="text-xs text-cyan-300 font-medium">
           GAME STATISTICS
         </span>
       </div>
@@ -123,32 +125,17 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
   const getResultColor = (result: string) => {
     switch (result) {
       case "player-blackjack":
-        return "text-yellow-400";
+        return "bg-six-nine text-zinc-900";
       case "player-wins":
-        return "text-green-400";
+        return "bg-teal-600 text-white";
       case "push":
-        return "text-blue-400";
+        return "bg-blue-500 text-white";
       case "dealer-wins":
+        return "bg-red-500/60 text-white";
       case "dealer-blackjack":
-        return "text-red-400";
+        return "bg-orange-400 text-white";
       default:
         return "text-neutral-400";
-    }
-  };
-
-  const getResultIcon = (result: string) => {
-    switch (result) {
-      case "player-blackjack":
-        return "★";
-      case "player-wins":
-        return "✓";
-      case "push":
-        return "=";
-      case "dealer-wins":
-      case "dealer-blackjack":
-        return "✗";
-      default:
-        return "?";
     }
   };
 
@@ -187,17 +174,18 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
     isBust: boolean,
   ) => {
     if (isBust) return "text-red-400";
-    if (playerValue > dealerValue) return "text-green-400";
-    if (playerValue === dealerValue) return "text-blue-400";
+    if (playerValue > dealerValue) return "text-teal-400";
+    if (dealerValue > 21) return "text-teal-400";
+    if (playerValue === dealerValue) return "text-blue-500";
     return "text-red-400";
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
+    <div className="pt-4">
+      <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-          <span className="text-xs text-orange-500 font-medium">
+          <div className="w-2 h-2 bg-orange-200 rounded-full"></div>
+          <span className="text-xs text-orange-200 font-medium">
             RECENT GAMES ({games.length})
           </span>
         </div>
@@ -218,7 +206,7 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
           No games played yet
         </div>
       ) : (
-        <div className="space-y-1 max-h-[32rem] overflow-y-auto">
+        <div className="space-y-1 max-h-[44rem] overflow-y-auto">
           {games.map((game) => {
             const playerValue = getPlayerHandValue(game);
             const dealerValue = game.dealerHand.value;
@@ -227,31 +215,55 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
             return (
               <div
                 key={game.id}
-                className="py-2 px-3 bg-neutral-800/50 rounded text-xs hover:bg-neutral-800/70 transition-colors"
+                className="py-4 px-3 bg-neutral-800/50 rounded text-xs hover:bg-neutral-800/70 transition-colors"
               >
                 {/* First row: Result, bet, winnings, time */}
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`font-bold ${getResultColor(game.overallResult || "")}`}
-                    >
-                      {getResultIcon(game.overallResult || "")}
-                    </span>
-                    <span
-                      className={`font-medium ${getResultColor(game.overallResult || "")}`}
-                    >
-                      {getResultText(game.overallResult || "")}
-                    </span>
-                    <span className="text-neutral-400">
-                      ${game.totalBetAmount}
-                    </span>
-                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20">
+                      <span
+                        className={`text-sm font-bold font-sans uppercase px-2 py-1.5 rounded-md ${getResultColor(game.overallResult ?? "")}`}
+                      >
+                        {getResultText(game.overallResult ?? "")}
+                      </span>
+                    </div>
 
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-neutral-500">You:</span>
+                        <span
+                          className={`font-sans text-base font-semibold ${
+                            typeof playerValue === "string"
+                              ? "text-neutral-300"
+                              : getHandValueColor(
+                                  playerValue as number,
+                                  dealerValue,
+                                  playerIsBust,
+                                )
+                          }`}
+                        >
+                          {playerValue}
+                        </span>
+                        <span className="text-neutral-500">vs</span>
+                        <span className="text-neutral-500">Dealer:</span>
+                        <span className="font-sans font-semibold text-base text-neutral-300">
+                          {dealerValue}
+                        </span>
+                      </div>
+
+                      {game.playerHands.length > 1 && (
+                        <span className="text-neutral-500 text-xs">
+                          {game.playerHands.length} hands
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <span
-                      className={`font-bold font-mono ${game.netWinnings >= 0 ? "text-green-400" : "text-red-400"}`}
+                      className={`font-semibold font-sans text-base ${game.netWinnings >= 0 ? "text-teal-400" : "text-red-400"}`}
                     >
-                      {game.netWinnings >= 0 ? "+" : ""}${game.netWinnings}
+                      {game.netWinnings >= 0 ? "+" : ""}
+                      {game.netWinnings}
                     </span>
                     <span className="text-neutral-500 text-xs">
                       {new Date(game.timestamp).toLocaleTimeString([], {
@@ -260,37 +272,6 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
                       })}
                     </span>
                   </div>
-                </div>
-
-                {/* Second row: Hand values */}
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-neutral-500">You:</span>
-                    <span
-                      className={`font-mono font-bold ${
-                        typeof playerValue === "string"
-                          ? "text-neutral-300"
-                          : getHandValueColor(
-                              playerValue as number,
-                              dealerValue,
-                              playerIsBust,
-                            )
-                      }`}
-                    >
-                      {playerValue}
-                    </span>
-                    <span className="text-neutral-500">vs</span>
-                    <span className="text-neutral-500">Dealer:</span>
-                    <span className="font-mono font-bold text-neutral-300">
-                      {dealerValue}
-                    </span>
-                  </div>
-
-                  {game.playerHands.length > 1 && (
-                    <span className="text-neutral-500 text-xs">
-                      {game.playerHands.length} hands
-                    </span>
-                  )}
                 </div>
               </div>
             );
@@ -304,15 +285,15 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
 export const GameConcept = () => {
   return (
     <div>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
+      <CardHeader className="py-3">
+        <CardTitle className="text-base font-medium text-neutral-300 tracking-wider">
           GAME RULES
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div>
-            <div className="text-xs text-orange-500 font-medium mb-2">
+            <div className="text-xs text-orange-300 font-semibold mb-2">
               OBJECTIVE
             </div>
             <div className="text-xs text-neutral-300">
@@ -322,7 +303,7 @@ export const GameConcept = () => {
           </div>
 
           <div>
-            <div className="text-xs text-orange-500 font-medium mb-2">
+            <div className="text-xs text-orange-300 font-semibold mb-2">
               CARD VALUES
             </div>
             <div className="space-y-1 text-xs text-neutral-300">
@@ -333,7 +314,7 @@ export const GameConcept = () => {
           </div>
 
           <div>
-            <div className="text-xs text-orange-500 font-medium mb-2">
+            <div className="text-xs text-orange-300 font-semibold mb-2">
               ACTIONS
             </div>
             <div className="space-y-1 text-xs text-neutral-300">
@@ -344,14 +325,14 @@ export const GameConcept = () => {
                 • <span className="text-red-400">STAND</span>: Keep current hand
               </div>
               <div>
-                • <span className="text-orange-300">x2</span>: Double bet, take
+                • <span className="text-orange-200">x2</span>: Double bet, take
                 one card
               </div>
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-orange-500 font-medium mb-2">
+            <div className="text-xs text-orange-300 font-semibold mb-2">
               PAYOUTS
             </div>
             <div className="space-y-1 text-xs text-neutral-300">
@@ -362,7 +343,7 @@ export const GameConcept = () => {
           </div>
 
           <div>
-            <div className="text-xs text-orange-500 font-medium mb-2">
+            <div className="text-xs text-orange-300 font-semibold mb-2">
               STRATEGY
             </div>
             <div className="text-xs text-neutral-300">

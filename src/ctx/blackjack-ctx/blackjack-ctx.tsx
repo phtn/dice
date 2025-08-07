@@ -8,6 +8,8 @@ import {
   useState,
   useCallback,
   useRef,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import { BlackjackEngine } from "./game-engine";
 import {
@@ -37,7 +39,7 @@ interface BlackjackCtxValues {
 
   // Betting
   betAmount: number;
-  setBetAmount: (amount: number) => void;
+  setBetAmount: Dispatch<SetStateAction<number>>;
 
   // Game actions
   startNewGame: () => void;
@@ -444,29 +446,32 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     ],
   );
 
-  const handlePostBust = useCallback((updatedHands: PlayerHand[]) => {
-    const nextPlayableIndex = findNextPlayableHand(
-      activeHandIndex + 1,
-      updatedHands,
-    );
+  const handlePostBust = useCallback(
+    (updatedHands: PlayerHand[]) => {
+      const nextPlayableIndex = findNextPlayableHand(
+        activeHandIndex + 1,
+        updatedHands,
+      );
 
-    if (nextPlayableIndex !== -1) {
-      setActiveHandIndex(nextPlayableIndex);
-    } else {
-      // Check if all hands are busted - if so, skip dealer play
-      if (checkIfAllHandsBusted(updatedHands)) {
-        processGameEnd();
+      if (nextPlayableIndex !== -1) {
+        setActiveHandIndex(nextPlayableIndex);
       } else {
-        dealerPlay();
+        // Check if all hands are busted - if so, skip dealer play
+        if (checkIfAllHandsBusted(updatedHands)) {
+          processGameEnd();
+        } else {
+          dealerPlay();
+        }
       }
-    }
-  }, [
-    activeHandIndex,
-    findNextPlayableHand,
-    checkIfAllHandsBusted,
-    processGameEnd,
-    dealerPlay,
-  ]);
+    },
+    [
+      activeHandIndex,
+      findNextPlayableHand,
+      checkIfAllHandsBusted,
+      processGameEnd,
+      dealerPlay,
+    ],
+  );
 
   const hit = useCallback(() => {
     if (gameState !== "player-turn" || activeHandIndex >= playerHands.length)

@@ -11,15 +11,13 @@ import { useBlackjackCtx } from "@/ctx/blackjack-ctx";
 import { useAccountCtx } from "@/ctx/acc-ctx";
 import { Chip } from "./chip";
 import { PlayingCard } from "./playing-card";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 import { opts } from "@/utils/helpers";
 import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
-
-const chipValues = [5, 10, 25, 50, 100, 250, 1000];
 
 // Helper function to format hand value display
 const formatHandValue = (hand: Hand) => {
@@ -35,6 +33,79 @@ const formatHandValue = (hand: Hand) => {
 
   return hand.value.toString();
 };
+
+// Static ChipArray component that never re-renders
+const StaticChipArray = memo(
+  ({
+    onChipClick,
+    balance,
+  }: {
+    onChipClick: (chipValue: number) => void;
+    balance: number;
+  }) => {
+    const chipValues = [5, 10, 25, 50, 100, 250, 1000];
+    const radius = 50;
+    const angleStart = -Math.PI;
+    const angleEnd = 0;
+    const centerX = 0;
+    const centerY = 0;
+    const angleStep = (angleEnd - angleStart) / (chipValues.length - 1);
+
+    const arcPositions = chipValues.map((_, index) => {
+      const angle = angleStart + index * angleStep;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      return { x, y };
+    });
+
+    return (
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          visible: {
+            transition: {
+              staggerChildren: 0.15,
+              delayChildren: 0.25,
+            },
+          },
+        }}
+        className="relative bottom-0 border rounded-xl h-48 mx-auto mt-0 w-full flex justify-center items-center"
+      >
+        {chipValues.map((chipValue, i) => {
+          const { x, y } = arcPositions[i];
+
+          return (
+            <motion.div
+              key={chipValue}
+              initial={{ opacity: 0, y: y + 30 }}
+              animate={{ opacity: 1, x, y }}
+              transition={{
+                type: "spring",
+                visualDuration: 0.6,
+                bounce: 0.4,
+                delay: i * 0.1,
+              }}
+            >
+              <Chip
+                value={chipValue}
+                selected={false}
+                disabled={balance < chipValue}
+                onClick={() => {
+                  if (balance >= chipValue) {
+                    onChipClick(chipValue);
+                  }
+                }}
+              />
+            </motion.div>
+          );
+        })}
+      </motion.div>
+    );
+  },
+);
+
+StaticChipArray.displayName = "StaticChipArray";
 
 export const GameplayCard = () => {
   const {
@@ -61,7 +132,6 @@ export const GameplayCard = () => {
 
   const { balance, resetBalance } = useAccountCtx();
 
-  const [selectedChips, setSelectedChips] = useState<number[]>([]);
   const [lastBetAmount, setLastBetAmount] = useState(0);
   const [betHistory, setBetHistory] = useState<number[]>([]);
 
@@ -77,44 +147,23 @@ export const GameplayCard = () => {
     [gameState, canDoubleDown, canSplit, dealerHand.cards, playerHands],
   );
 
-  // Clear selected chips when returning to betting phase
+  // Clear bet history when returning to betting phase
   useEffect(() => {
     if (gameState === "betting" && betAmount === 0) {
-      setSelectedChips([]);
       setBetHistory([]);
     }
   }, [gameState, betAmount]);
-
-  const onChipClick = useCallback(
-    (chipValue: number) => {
-      if ((balance?.amount || 0) >= chipValue) {
-        setBetAmount(betAmount + chipValue);
-        setSelectedChips((prev: number[]) => [...prev, chipValue]);
-        setBetHistory((prev: number[]) => [...prev, chipValue]);
-      }
-    },
-    [balance?.amount, betAmount, setBetAmount],
-  );
 
   const handleUndo = useCallback(() => {
     if (betHistory.length > 0) {
       const lastChip = betHistory[betHistory.length - 1];
       setBetAmount(betAmount - lastChip);
       setBetHistory((prev: number[]) => prev.slice(0, -1));
-
-      // Remove the last occurrence of this chip from selectedChips
-      const chipIndex = selectedChips.lastIndexOf(lastChip);
-      if (chipIndex > -1) {
-        const newSelectedChips = [...selectedChips];
-        newSelectedChips.splice(chipIndex, 1);
-        setSelectedChips(newSelectedChips);
-      }
     }
-  }, [betAmount, betHistory, selectedChips, setBetAmount]);
+  }, [betAmount, betHistory, setBetAmount]);
 
   const handleClearBet = useCallback(() => {
     setBetAmount(0);
-    setSelectedChips([]);
     setBetHistory([]);
   }, [setBetAmount]);
 
@@ -129,48 +178,41 @@ export const GameplayCard = () => {
       setBetAmount(lastBetAmount);
       // Reconstruct bet history for re-bet (simplified as single amount)
       setBetHistory([lastBetAmount]);
-      setSelectedChips([lastBetAmount]);
     }
   }, [balance?.amount, lastBetAmount, setBetAmount]);
   const getResultMessage = useCallback(() => {
     switch (gameResult) {
       case "player-blackjack":
-        return "BLACKJACK! You win!";
+        return "BLACKJACK!";
       case "player-wins":
         return "You win!";
       case "dealer-blackjack":
-        return "Dealer Blackjack. You lose.";
+        return "Dealer Blackjack.";
       case "dealer-wins":
-        return "Dealer wins. You lose.";
+        return "Dealer wins.";
       case "push":
-        return "Push! It's a tie.";
+        return "Push!";
       default:
         return "";
     }
   }, [gameResult]);
 
-  const handleChipSelect = useCallback(
-    (v: number) => () => onChipClick(v),
-    [onChipClick],
-  );
+  const [currentBalance] = useState(balance?.amount);
 
+  // Create a completely static ChipArray that never re-renders
   const ChipArray = useCallback(() => {
-    const radius = 50; // distance from center
-    const angleStart = -Math.PI; // in degrees
+    const chipValues = [5, 10, 25, 50, 100, 250, 1000];
+    const radius = 50;
+    const angleStart = -Math.PI;
     const angleEnd = 0;
     const centerX = 0;
     const centerY = 0;
-
-    // Convert degrees to radians
-    // Create 7 evenly spaced angles between start and end
-    // const angleStep = (angleEnd - angleStart) / (chipValues.length - 1);
     const angleStep = (angleEnd - angleStart) / (chipValues.length - 1);
 
     const arcPositions = chipValues.map((_, index) => {
       const angle = angleStart + index * angleStep;
       const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle); // This gives you the "dome" effect (higher y → top)
-
+      const y = centerY + radius * Math.sin(angle);
       return { x, y };
     });
 
@@ -193,7 +235,7 @@ export const GameplayCard = () => {
 
           return (
             <motion.div
-              key={i}
+              key={chipValue}
               initial={{ opacity: 0, y: y + 30 }}
               animate={{ opacity: 1, x, y }}
               transition={{
@@ -204,18 +246,23 @@ export const GameplayCard = () => {
               }}
             >
               <Chip
-                key={chipValue}
                 value={chipValue}
-                selected={selectedChips.includes(chipValue)}
-                disabled={(balance?.amount || 0) < chipValue}
-                onClick={handleChipSelect(chipValue)}
+                selected={false}
+                disabled={false} // Handle disabled state in the click handler
+                onClick={() => {
+                  // Check balance at click time
+                  if ((currentBalance || 0) >= chipValue) {
+                    setBetAmount((prev) => prev + chipValue);
+                    setBetHistory((prev: number[]) => [...prev, chipValue]);
+                  }
+                }}
               />
             </motion.div>
           );
         })}
       </motion.div>
     );
-  }, [balance?.amount, handleChipSelect, selectedChips]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const PlayerActions = useCallback(() => {
     const isPlayersTurn = gameState === "player-turn";
@@ -402,11 +449,29 @@ export const GameplayCard = () => {
     return <>{options.get(betAmount !== 0)}</>;
   }, [balance?.amount, betAmount, handleStartNewGame]);
 
+  // Create a stable callback using useRef
+  const setBetAmountRef = useRef(setBetAmount);
+  const setBetHistoryRef = useRef(setBetHistory);
+
+  // Update refs when functions change
+  setBetAmountRef.current = setBetAmount;
+  setBetHistoryRef.current = setBetHistory;
+
+  // Completely stable callback for chip clicks
+  // const handleChipClick = useCallback((chipValue: number) => {
+  //   setBetAmountRef.current((prev) => prev + chipValue);
+  //   setBetHistoryRef.current((prev: number[]) => [...prev, chipValue]);
+  // }, []); // No dependencies!
+
   const BettingControls = useCallback(() => {
     const options = opts(
       <div className=" ">
         <div className="relative bottom-0 h-1/4 flex gap-3 justify-center">
           <ChipArray />
+          {/*<StaticChipArray
+            onChipClick={handleChipClick}
+            balance={balance?.amount || 0}
+          />*/}
           <PlayOptions />
           <QuickBetOptions />
         </div>
@@ -475,10 +540,12 @@ export const GameplayCard = () => {
                 ))}
               </div>
 
-              <div className="text-white font-mono text-lg">
-                {gameState === "player-turn"
-                  ? "?"
-                  : formatHandValue(dealerHand)}
+              <div className="text-white font-mono space-x-2 text-lg">
+                <span>
+                  {gameState === "player-turn"
+                    ? "?"
+                    : formatHandValue(dealerHand)}
+                </span>
                 {dealerHand.isSoft && gameState !== "player-turn" && (
                   <span className="text-sm text-neutral-400"> (soft)</span>
                 )}
@@ -486,7 +553,9 @@ export const GameplayCard = () => {
                   <span className="text-orange-300 text-sm"> BLACKJACK!</span>
                 )}
                 {dealerHand.isBust && (
-                  <span className="text-red-500 text-base"> BUST!</span>
+                  <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
+                    BUST
+                  </span>
                 )}
               </div>
             </div>
@@ -570,7 +639,9 @@ export const GameplayCard = () => {
                             </span>
                           )}
                           {hand.isBust && (
-                            <span className="text-red-500 text-sm"> BUST!</span>
+                            <span className="bg-red-500 px-1 font-bold tracking-tighter rounded-sm text-base">
+                              BUST!
+                            </span>
                           )}
                         </div>
                         <div className="text-sm text-neutral-100 py-1.5 border-t-3 border-poker-dark">
