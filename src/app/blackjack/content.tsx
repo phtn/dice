@@ -6,8 +6,22 @@ import { InfoCard } from "./_components/info-card";
 import { GameplayCard } from "./_components/gameplay-card";
 // import { UpdatesCard } from "./_components/updates-card";
 import { ShoeCard } from "./_components/shoe-card";
+import { useCallback, useState } from "react";
+import { opts } from "@/utils/helpers";
+import { Studio } from "./_components/studio";
 
 export const Content = () => {
+  const [onStudio, setOnStudio] = useState(false);
+  const toggleActiveOption = useCallback(
+    () => setOnStudio((prev) => !prev),
+    [],
+  );
+
+  const ActiveOptions = useCallback(() => {
+    const options = opts(<Studio />, <GameplayCard />);
+    return <>{options.get(onStudio)}</>;
+  }, [onStudio]);
+
   return (
     <div className="md:px-4 space-y-6">
       {/* Main Blackjack Game Grid */}
@@ -16,12 +30,12 @@ export const Content = () => {
         <DesktopShoeCard />
 
         {/* Main Game Table */}
-        <GameplayCard />
+        <ActiveOptions />
 
         <MobileShoeCard />
 
         {/* Game Statistics */}
-        <InfoCard />
+        <InfoCard toggleActiveOption={toggleActiveOption} />
 
         {/* Game Updates/Rules */}
         {/*<UpdatesCard />*/}

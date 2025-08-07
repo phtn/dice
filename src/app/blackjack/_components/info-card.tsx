@@ -10,7 +10,10 @@ import {
 import { StrategyGuide } from "@/components/blackjack/strategy-guide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const InfoCard = () => {
+interface Props {
+  toggleActiveOption: VoidFunction;
+}
+export const InfoCard = ({ toggleActiveOption }: Props) => {
   const { getHistoryStats, getRecentGames, clearGameHistory } =
     useBlackjackCtx();
   // const { balance } = useAccountCtx();
@@ -43,7 +46,7 @@ export const InfoCard = () => {
           />
         </TabsContent>
         <TabsContent value="strategy">
-          <StrategyGuide />
+          <StrategyGuide toggleStudio={toggleActiveOption} />
         </TabsContent>
         <TabsContent value="rules">
           <GameConcept />

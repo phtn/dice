@@ -26,7 +26,7 @@ export const ShoeCard = () => {
     getUsedCardsByRank,
   } = useBlackjackCtx();
 
-  const deckOptions = [1, 2, 4, 6, 8];
+  const deckOptions = [1, 4, 8, 16, 24];
   const remainingPercentage =
     totalCards > 0 ? (remainingCards / totalCards) * 100 : 0;
   const usedPercentage = totalCards > 0 ? (usedCards / totalCards) * 100 : 0;

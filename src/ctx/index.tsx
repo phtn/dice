@@ -6,6 +6,7 @@ import { RNGCtxProvider } from "./rng-ctx";
 import { AccountCtxProvider } from "./acc-ctx";
 import { BlackjackCtxProvider } from "./blackjack-ctx";
 import WagmiContext from "./wagmi";
+import { StudioCtxProvider } from "./studio";
 
 interface ProvidersProviderProps {
   children: ReactNode;
@@ -30,7 +31,9 @@ const ProvidersCtxProvider = ({ children }: ProvidersProviderProps) => {
         <AccountCtxProvider>
           <RNGCtxProvider>
             <BetCtxProvider>
-              <BlackjackCtxProvider>{children}</BlackjackCtxProvider>
+              <BlackjackCtxProvider>
+                <StudioCtxProvider>{children}</StudioCtxProvider>
+              </BlackjackCtxProvider>
             </BetCtxProvider>
           </RNGCtxProvider>
         </AccountCtxProvider>

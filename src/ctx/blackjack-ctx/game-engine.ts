@@ -74,14 +74,14 @@ export class BlackjackEngine {
     }
   }
 
-  dealCard(): DealtCard | null {
+  dealCard(customCard?: Card): DealtCard | null {
     // Auto-shuffle when deck gets low (less than 25% remaining)
     const totalCards = this.deckCount * 52;
     if (this.deck.length < totalCards * 0.25) {
       this.shuffleDeck();
     }
 
-    const card = this.deck.pop() || null;
+    const card = customCard ? customCard : this.deck.pop() || null;
     if (card) {
       this.usedCards.push(card);
     }
@@ -135,7 +135,8 @@ export class BlackjackEngine {
     let acesUsedAsEleven = 0;
 
     // Try to use one ace as 11 if it doesn't bust
-    if (aces > 0 && highValue + 10 <= 21) { // +10 because we're changing one ace from 1 to 11
+    if (aces > 0 && highValue + 10 <= 21) {
+      // +10 because we're changing one ace from 1 to 11
       highValue += 10; // Change one ace from 1 to 11
       acesUsedAsEleven = 1;
     }

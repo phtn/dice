@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 
 interface StrategyGuideProps {
+  toggleStudio: VoidFunction;
   className?: string;
 }
 
@@ -296,7 +297,7 @@ export const getBaseStrategy = (
   };
 };
 
-export const StrategyGuide: FC<StrategyGuideProps> = () => {
+export const StrategyGuide: FC<StrategyGuideProps> = ({ toggleStudio }) => {
   // const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CardCategory>("hard");
 
@@ -499,16 +500,16 @@ export const StrategyGuide: FC<StrategyGuideProps> = () => {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
-            BASIC STRATEGY GUIDE
+            BASIC STRATEGY GUIDEX
           </CardTitle>
-          {/*<Button
-            // onClick={() => setIsOpen(false)}
+
+          <Button
+            onClick={toggleStudio}
             variant="ghost"
-            size="sm"
-            className="text-neutral-400 hover:text-neutral-200"
+            className="text-cyan-100 hover:text-cyan-50"
           >
-            <Icon name="clear" className="w-4 h-4" />
-          </Button>*/}
+            Toggle Studio
+          </Button>
         </div>
 
         {/* Tab Navigation */}
