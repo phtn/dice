@@ -1,19 +1,303 @@
 "use client";
 
 import { FC, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card as CardComp,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 
 interface StrategyGuideProps {
   className?: string;
 }
 
 type CardCategory = "hard" | "soft" | "pairs";
+type Confidence = "high" | "medium" | "low";
 
-export const StrategyGuide: FC<StrategyGuideProps> = ({ className }) => {
-  const [isOpen, setIsOpen] = useState(false);
+interface BaseStrategy {
+  action: string;
+  description: string;
+  confidence: Confidence;
+}
+
+// Export the strategy recommendation function for use in other components
+export const getBaseStrategy = (
+  playerHand: Hand,
+  dealerUpCard: Card,
+  canDoubleDown: boolean = true,
+  canSplit: boolean = false,
+): BaseStrategy => {
+  // Strategy data (duplicated for standalone function)
+  const hardTotals = [
+    {
+      player: "17",
+      dealer: ["S", "S", "S", "S", "S", "S", "S", "S", "S", "S"],
+    },
+    {
+      player: "16",
+      dealer: ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "15",
+      dealer: ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "14",
+      dealer: ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "13",
+      dealer: ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "12",
+      dealer: ["H", "H", "S", "S", "S", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "11",
+      dealer: ["D", "D", "D", "D", "D", "D", "D", "D", "D", "H"],
+    },
+    {
+      player: "10",
+      dealer: ["D", "D", "D", "D", "D", "D", "D", "D", "H", "H"],
+    },
+    { player: "9", dealer: ["H", "D", "D", "D", "D", "H", "H", "H", "H", "H"] },
+    { player: "8", dealer: ["H", "H", "H", "H", "H", "H", "H", "H", "H", "H"] },
+  ];
+
+  const softTotals = [
+    {
+      player: "A,9",
+      dealer: ["S", "S", "S", "S", "S", "S", "S", "S", "S", "S"],
+    },
+    {
+      player: "A,8",
+      dealer: ["S", "S", "S", "S", "Ds", "S", "S", "S", "S", "S"],
+    },
+    {
+      player: "A,7",
+      dealer: ["Ds", "Ds", "Ds", "Ds", "Ds", "S", "S", "H", "H", "H"],
+    },
+    {
+      player: "A,6",
+      dealer: ["H", "D", "D", "D", "D", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "A,5",
+      dealer: ["H", "H", "D", "D", "D", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "A,4",
+      dealer: ["H", "H", "D", "D", "D", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "A,3",
+      dealer: ["H", "H", "H", "D", "D", "H", "H", "H", "H", "H"],
+    },
+    {
+      player: "A,2",
+      dealer: ["H", "H", "H", "D", "D", "H", "H", "H", "H", "H"],
+    },
+  ];
+
+  const pairSplitting = [
+    {
+      player: "A,A",
+      dealer: ["Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"],
+    },
+    {
+      player: "10,10",
+      dealer: ["N", "N", "N", "N", "N", "N", "N", "N", "N", "N"],
+    },
+    {
+      player: "9,9",
+      dealer: ["Y", "Y", "Y", "Y", "Y", "N", "Y", "Y", "N", "N"],
+    },
+    {
+      player: "8,8",
+      dealer: ["Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"],
+    },
+    {
+      player: "7,7",
+      dealer: ["Y", "Y", "Y", "Y", "Y", "Y", "N", "N", "N", "N"],
+    },
+    {
+      player: "6,6",
+      dealer: ["Y/N", "Y", "Y", "Y", "Y", "N", "N", "N", "N", "N"],
+    },
+    {
+      player: "5,5",
+      dealer: ["N", "N", "N", "N", "N", "N", "N", "N", "N", "N"],
+    },
+    {
+      player: "4,4",
+      dealer: ["N", "N", "N", "Y/N", "Y/N", "N", "N", "N", "N", "N"],
+    },
+    {
+      player: "3,3",
+      dealer: ["Y/N", "Y/N", "Y", "Y", "Y", "Y", "N", "N", "N", "N"],
+    },
+    {
+      player: "2,2",
+      dealer: ["Y/N", "Y/N", "Y", "Y", "Y", "Y", "N", "N", "N", "N"],
+    },
+  ];
+
+  const getDealerIndex = (card: Card): number => {
+    if (card?.rank === "A") return 9;
+    if (["J", "Q", "K"].includes(card?.rank)) return 8;
+    if (card?.rank === "10") return 8;
+    return parseInt(card?.rank) - 2;
+  };
+
+  const getActionRecommendation = (
+    action: string,
+    canDoubleDown: boolean,
+    confidence: "high" | "medium" | "low",
+  ) => {
+    switch (action) {
+      case "H":
+        return { action: "HIT", description: "Take another card", confidence };
+      case "S":
+        return {
+          action: "STAND",
+          description: "Keep your current total",
+          confidence,
+        };
+      case "D":
+        return canDoubleDown
+          ? {
+              action: "DOUBLE DOWN",
+              description: "Double your bet and take exactly one more card",
+              confidence,
+            }
+          : {
+              action: "HIT",
+              description: "Hit (can't double down)",
+              confidence: "medium" as const,
+            };
+      case "Ds":
+        return canDoubleDown
+          ? {
+              action: "DOUBLE DOWN",
+              description:
+                "Double your bet and take exactly one more card, or stand if you can't double",
+              confidence,
+            }
+          : {
+              action: "STAND",
+              description: "Stand (can't double down)",
+              confidence: "medium" as const,
+            };
+      default:
+        return {
+          action: "HIT",
+          description: "Default action",
+          confidence: "low" as const,
+        };
+    }
+  };
+
+  const dealerIndex = getDealerIndex(dealerUpCard);
+  const isPair =
+    playerHand.cards.length === 2 &&
+    playerHand.cards[0].rank === playerHand.cards[1].rank;
+  const isSoft = playerHand.isSoft;
+
+  // Check pairs first
+  if (isPair && canSplit) {
+    const pairValue = playerHand.cards[0].rank;
+    let pairRow = null;
+
+    if (pairValue === "A") {
+      pairRow = pairSplitting.find((row) => row.player === "A,A");
+    } else if (["J", "Q", "K", "10"].includes(pairValue)) {
+      pairRow = pairSplitting.find((row) => row.player === "10,10");
+    } else {
+      pairRow = pairSplitting.find(
+        (row) => row.player === `${pairValue},${pairValue}`,
+      );
+    }
+
+    if (pairRow) {
+      const action = pairRow.dealer[dealerIndex];
+      if (action === "Y") {
+        return {
+          action: "SPLIT",
+          description: `Split your pair of ${pairValue}s`,
+          confidence: "high",
+        };
+      } else if (action === "Y/N") {
+        return {
+          action: "SPLIT",
+          description: `Split if Double After Split is allowed, otherwise follow basic strategy`,
+          confidence: "medium",
+        };
+      }
+    }
+  }
+
+  // Check soft hands
+  if (isSoft && playerHand.cards.length === 2) {
+    const aceCard = playerHand.cards.find((card) => card.rank === "A");
+    const otherCard = playerHand.cards.find((card) => card.rank !== "A");
+
+    if (aceCard && otherCard) {
+      const otherValue =
+        otherCard.rank === "A"
+          ? "9"
+          : ["J", "Q", "K"].includes(otherCard.rank)
+            ? "9" // A,10 is A,9 in soft totals
+            : otherCard.rank;
+
+      const softRow = softTotals.find(
+        (row) => row.player === `A,${otherValue}`,
+      );
+
+      if (softRow) {
+        const action = softRow.dealer[dealerIndex];
+        return getActionRecommendation(action, canDoubleDown, "high");
+      }
+    }
+  }
+
+  // Check hard hands
+  const handValue = playerHand.value;
+  const hardRow = hardTotals.find((row) => parseInt(row.player) === handValue);
+
+  if (hardRow) {
+    const action = hardRow.dealer[dealerIndex];
+    return getActionRecommendation(action, canDoubleDown, "high");
+  }
+
+  // Fallback
+  if (handValue >= 17) {
+    return {
+      action: "STAND",
+      description: "Stand on 17 or higher",
+      confidence: "high",
+    };
+  } else if (handValue <= 8) {
+    return {
+      action: "HIT",
+      description: "Always hit on 8 or lower",
+      confidence: "high",
+    };
+  }
+
+  return {
+    action: "HIT",
+    description: "Default recommendation",
+    confidence: "low",
+  };
+};
+
+export const StrategyGuide: FC<StrategyGuideProps> = () => {
+  // const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CardCategory>("hard");
 
   // Strategy data based on your matrix
@@ -193,38 +477,38 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({ className }) => {
     }
   };
 
-  if (!isOpen) {
-    return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        variant="outline"
-        size="sm"
-        className={cn(
-          "bg-neutral-800/50 border-neutral-700 text-neutral-300 hover:bg-neutral-700",
-          className,
-        )}
-      >
-        <Icon name="arrow-right" className="w-4 h-4 mr-2" />
-        Strategy Guide
-      </Button>
-    );
-  }
+  // if (!isOpen) {
+  //   return (
+  //     <Button
+  //       onClick={() => setIsOpen(true)}
+  //       variant="outline"
+  //       size="sm"
+  //       className={cn(
+  //         "bg-neutral-800/50 border-neutral-700 text-neutral-300 hover:bg-neutral-700",
+  //         className,
+  //       )}
+  //     >
+  //       <Icon name="arrow-right" className="w-4 h-4 mr-2" />
+  //       Strategy Guide
+  //     </Button>
+  //   );
+  // }
 
   return (
-    <Card className="bg-neutral-900/95 border-neutral-700 backdrop-blur-sm">
+    <CardComp className="bg-neutral-900/95 border-neutral-700 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
             BASIC STRATEGY GUIDE
           </CardTitle>
-          <Button
-            onClick={() => setIsOpen(false)}
+          {/*<Button
+            // onClick={() => setIsOpen(false)}
             variant="ghost"
             size="sm"
             className="text-neutral-400 hover:text-neutral-200"
           >
             <Icon name="clear" className="w-4 h-4" />
-          </Button>
+          </Button>*/}
         </div>
 
         {/* Tab Navigation */}
@@ -344,6 +628,6 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({ className }) => {
           playing.
         </div>
       </CardContent>
-    </Card>
+    </CardComp>
   );
 };

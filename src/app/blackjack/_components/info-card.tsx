@@ -19,7 +19,10 @@ export const InfoCard = () => {
   const recentGames = getRecentGames(20);
 
   return (
-    <Tabs className="lg:col-span-4 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden">
+    <Tabs
+      defaultValue={"stats"}
+      className="lg:col-span-4 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden"
+    >
       <TabsList className="dark:bg-zinc-700/20 inset-shadow-[0_0.5px_rgb(255_255_255/0.20)] space-x-6 overflow-hidden">
         <TabsTrigger
           value="stats"

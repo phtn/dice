@@ -11,12 +11,13 @@ import { useBlackjackCtx } from "@/ctx/blackjack-ctx";
 import { useAccountCtx } from "@/ctx/acc-ctx";
 import { Chip } from "./chip";
 import { PlayingCard } from "./playing-card";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 import { opts } from "@/utils/helpers";
+import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
 
 const chipValues = [5, 10, 25, 50, 100, 250, 1000];
 
@@ -63,6 +64,18 @@ export const GameplayCard = () => {
   const [selectedChips, setSelectedChips] = useState<number[]>([]);
   const [lastBetAmount, setLastBetAmount] = useState(0);
   const [betHistory, setBetHistory] = useState<number[]>([]);
+
+  const baseStrategy = useMemo(
+    () =>
+      gameState === "player-turn" &&
+      getBaseStrategy(
+        playerHands[0],
+        dealerHand.cards[0],
+        canDoubleDown,
+        canSplit,
+      ),
+    [gameState, canDoubleDown, canSplit, dealerHand.cards, playerHands],
+  );
 
   // Clear selected chips when returning to betting phase
   useEffect(() => {
@@ -207,7 +220,14 @@ export const GameplayCard = () => {
   const PlayerActions = useCallback(() => {
     const isPlayersTurn = gameState === "player-turn";
     const options = opts(
-      <div className="space-y-4 pt-4 flex justify-center">
+      <div className="space-y-4 pt-4 flex flex-col items-center justify-center">
+        {baseStrategy && (
+          <div className="text-sm flex items-center border-b px-6 py-1">
+            {baseStrategy.action}
+            <span className="font-thin opacity-60 px-4">|</span>
+            {baseStrategy.confidence}
+          </div>
+        )}
         <div className="flex space-x-4">
           <Button
             onClick={doubleDown}
@@ -245,6 +265,7 @@ export const GameplayCard = () => {
     );
     return <>{options.get(isPlayersTurn)}</>;
   }, [
+    baseStrategy,
     canDoubleDown,
     canHit,
     canSplit,
