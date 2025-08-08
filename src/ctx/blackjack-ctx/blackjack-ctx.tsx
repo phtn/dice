@@ -76,6 +76,9 @@ interface BlackjackCtxValues {
   // Utils
   getCardDisplay: (card: Card) => string;
 
+  // Studio integration
+  dealSpecificCard: (card: Card) => void;
+
   // Game History
   getGameHistory: () => GameHistoryEntry[];
   getHistoryStats: () => ReturnType<typeof GameHistoryManager.getStats>;
@@ -714,6 +717,16 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     [engine],
   );
 
+  // Deal a specific card (for studio use)
+  const dealSpecificCard = useCallback(
+    (card: Card) => {
+      if (gameState === "betting") {
+        engine.dealCard(card);
+      }
+    },
+    [engine, gameState],
+  );
+
   // Game History methods
   const getGameHistory = useCallback(() => GameHistoryManager.getHistory(), []);
   const getHistoryStats = useCallback(() => GameHistoryManager.getStats(), []);
@@ -767,6 +780,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       clearGameHistory,
       exportGameHistory,
       startNewBet,
+      dealSpecificCard,
     }),
     [
       gameState,
@@ -803,6 +817,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       clearGameHistory,
       exportGameHistory,
       startNewBet,
+      dealSpecificCard,
     ],
   );
 

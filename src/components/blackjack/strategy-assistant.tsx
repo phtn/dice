@@ -35,6 +35,11 @@ export const StrategyAssistant: FC<StrategyAssistantProps> = ({
   const currentPlayerHand = playerHands[activeHandIndex];
   const dealerUpCard = dealerHand.cards[0];
   const remainingCardsByRank = getRemainingCardsByRank();
+  
+  // Debug logging
+  console.log('Strategy Assistant - remainingCardsByRank:', remainingCardsByRank);
+  console.log('Strategy Assistant - currentPlayerHand:', currentPlayerHand);
+  console.log('Strategy Assistant - dealerUpCard:', dealerUpCard);
 
   const {
     strategy,

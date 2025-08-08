@@ -24,6 +24,7 @@ export const useAdvancedStrategy = ({
 
     // If we have remaining cards data, use advanced strategy
     if (remainingCardsByRank) {
+      console.log('Using advanced strategy with remaining cards:', remainingCardsByRank);
       return getAdvancedStrategy(
         playerHand,
         dealerUpCard,
@@ -34,6 +35,7 @@ export const useAdvancedStrategy = ({
     }
 
     // Otherwise fall back to basic strategy
+    console.log('Falling back to basic strategy - no remaining cards data');
     return getBaseStrategy(playerHand, dealerUpCard, canDoubleDown, canSplit);
   }, [playerHand, dealerUpCard, remainingCardsByRank, canDoubleDown, canSplit]);
 

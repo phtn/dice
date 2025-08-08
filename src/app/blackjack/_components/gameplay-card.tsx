@@ -197,7 +197,7 @@ export const GameplayCard = () => {
 
   // Create a completely static ChipArray that never re-renders
   const ChipArray = useCallback(() => {
-    const chipValues = [5, 10, 25, 50, 100, 250, 1000];
+    const chipValues = [25, 50, 100, 250, 1000];
     const radius = 15;
     const angleStart = -Math.PI;
     const angleEnd = 0;
@@ -449,14 +449,14 @@ export const GameplayCard = () => {
           visualDuration: 0.4,
           bounce: 0.3,
         }}
-        className="absolute border bottom-8"
+        className="absolute bottom-8"
       >
         <Button
           size="icon"
           onClick={handleStartNewGame}
           disabled={betAmount <= 0 || (balance?.amount || 0) < betAmount}
           className={cn(
-            "rounded-full border-2 border-teal-300 bg-zinc-900/40 text-white shrink-0",
+            "rounded-full border-2 border-teal-300 bg-zinc-900/40 hover:bg-zinc-900/80 text-white shrink-0",
           )}
         >
           <Icon solid name="play" className={`size-4 fill-white`} />

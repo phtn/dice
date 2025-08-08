@@ -113,6 +113,19 @@ export const deckOfCards: CustomCard[] = [
   { suit: "diamonds", rank: "J", value: 10, icon: "g-j-diamonds" },
   { suit: "diamonds", rank: "Q", value: 10, icon: "g-q-diamonds" },
   { suit: "diamonds", rank: "K", value: 10, icon: "g-k-diamonds" },
+  { suit: "clubs", rank: "A", value: 1, icon: "g-ace-clubs" },
+  { suit: "clubs", rank: "2", value: 2, icon: "g-2-clubs" },
+  { suit: "clubs", rank: "3", value: 3, icon: "g-3-clubs" },
+  { suit: "clubs", rank: "4", value: 4, icon: "g-4-clubs" },
+  { suit: "clubs", rank: "5", value: 5, icon: "g-5-clubs" },
+  { suit: "clubs", rank: "6", value: 6, icon: "g-6-clubs" },
+  { suit: "clubs", rank: "7", value: 7, icon: "g-7-clubs" },
+  { suit: "clubs", rank: "8", value: 8, icon: "g-8-clubs" },
+  { suit: "clubs", rank: "9", value: 9, icon: "g-9-clubs" },
+  { suit: "clubs", rank: "10", value: 10, icon: "g-10-clubs" },
+  { suit: "clubs", rank: "J", value: 10, icon: "g-j-clubs" },
+  { suit: "clubs", rank: "Q", value: 10, icon: "g-q-clubs" },
+  { suit: "clubs", rank: "K", value: 10, icon: "g-k-clubs" },
 ];
 
 export { StudioCtx, StudioCtxProvider, useStudioCtx };

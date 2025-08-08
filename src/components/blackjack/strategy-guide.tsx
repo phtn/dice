@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
+import { useBlackjackCtx } from "@/ctx/blackjack-ctx/blackjack-ctx";
 
 interface StrategyGuideProps {
   toggleStudio: VoidFunction;
@@ -528,16 +529,34 @@ export const getBaseStrategy = (
 
 export const StrategyGuide: FC<StrategyGuideProps> = ({
   toggleStudio,
-  playerHand,
-  dealerUpCard,
-  remainingCardsByRank,
-  canDoubleDown = true,
-  canSplit = false,
+  playerHand: propPlayerHand,
+  dealerUpCard: propDealerUpCard,
+  remainingCardsByRank: propRemainingCardsByRank,
+  canDoubleDown: propCanDoubleDown = true,
+  canSplit: propCanSplit = false,
   showAdvancedStrategy = false,
 }) => {
   // const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CardCategory>("hard");
   const [showAdvanced, setShowAdvanced] = useState(showAdvancedStrategy);
+
+  // Get data from context if not provided as props
+  const blackjackCtx = useBlackjackCtx();
+  const {
+    playerHands,
+    dealerHand,
+    activeHandIndex,
+    canDoubleDown: ctxCanDoubleDown,
+    canSplit: ctxCanSplit,
+    getRemainingCardsByRank,
+  } = blackjackCtx;
+
+  // Use props if provided, otherwise use context data
+  const playerHand = propPlayerHand || playerHands[activeHandIndex];
+  const dealerUpCard = propDealerUpCard || dealerHand.cards[0];
+  const remainingCardsByRank = propRemainingCardsByRank || getRemainingCardsByRank();
+  const canDoubleDown = propCanDoubleDown !== undefined ? propCanDoubleDown : ctxCanDoubleDown;
+  const canSplit = propCanSplit !== undefined ? propCanSplit : ctxCanSplit;
 
   // Strategy data based on your matrix
   const hardTotals = [
@@ -740,7 +759,7 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
-            BASIC STRATEGY GUIDE
+            STRATEGY GUIDE
           </CardTitle>
 
           <Button

@@ -10,12 +10,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useBlackjackCtx } from "@/ctx/blackjack-ctx/blackjack-ctx";
-import type { Card, CardRank, Hand } from "@/ctx/blackjack-ctx/types";
+import type { Card, CardRank, CardSuit, Hand } from "@/ctx/blackjack-ctx/types";
 import { useStudioCtx } from "@/ctx/studio";
 import { CustomCard, deckOfCards } from "@/ctx/studio/studio-ctx";
-import { Icon } from "@/lib/icons";
+import { Icon, IconName } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface PlayerHand {
   id: number;
@@ -102,6 +102,7 @@ const createHandFromCards = (
 interface PlayerRowProps {
   hand: PlayerHand;
   dealerUpCard: CustomCard | undefined;
+  getRemainingCards: () => Record<string, number>;
   onUpdateHand: (
     handId: number,
     updates: Partial<Omit<PlayerHand, "id">>,
@@ -112,10 +113,10 @@ interface PlayerRowProps {
 const PlayerRow = ({
   hand,
   dealerUpCard,
+  getRemainingCards,
   onUpdateHand,
   onRemoveHand,
 }: PlayerRowProps) => {
-  const { getRemainingCardsByRank } = useBlackjackCtx();
   const handleFirstCardSelect = useCallback(
     (card: CustomCard) => () => {
       onUpdateHand(hand.id, { firstCard: card });
@@ -147,8 +148,8 @@ const PlayerRow = ({
 
     const baseStrategy = getBaseStrategy(playerHand, dealerCard, true, true);
 
-    // For advanced strategy, we need remaining cards data
-    const remainingCardsByRank = getRemainingCardsByRank();
+    // For advanced strategy, we need remaining cards data from studio
+    const remainingCardsByRank = getRemainingCards();
     const advancedStrategy = getAdvancedStrategy(
       playerHand,
       dealerCard,
@@ -163,7 +164,7 @@ const PlayerRow = ({
       baseStrategy,
       advancedStrategy,
     };
-  }, [hand.firstCard, hand.secondCard, dealerUpCard, getRemainingCardsByRank]);
+  }, [hand.firstCard, hand.secondCard, dealerUpCard, getRemainingCards]);
 
   return (
     <div className="relative grid grid-cols-4 space-x-4 my-4 min-h-1/7 rounded-lg border bg-zinc-700/5 p-4">
@@ -207,20 +208,19 @@ const PlayerRow = ({
               )}
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-full">
+          <PopoverContent
+            // align="center"
+            side="bottom"
+            className="w-full bg-zinc-900/40 border-none backdrop-blur-lg"
+          >
             <div className="grid grid-cols-13 gap-1 max-w-md">
               {deckOfCards.map((c) => (
-                <button
-                  onClick={handleFirstCardSelect(c)}
+                <CardItem
                   key={c.icon}
-                  className="bg-red-500 w-8 h-10 rounded-sm flex items-center justify-center hover:bg-red-600 transition-colors"
-                >
-                  <Icon
-                    solid
-                    name={c.icon}
-                    className="size-6 text-white shrink-0"
-                  />
-                </button>
+                  icon={c.icon}
+                  suit={c.suit}
+                  fn={handleFirstCardSelect(c)}
+                />
               ))}
             </div>
           </PopoverContent>
@@ -241,17 +241,12 @@ const PlayerRow = ({
           <PopoverContent className="w-full">
             <div className="grid grid-cols-13 gap-1 max-w-md">
               {deckOfCards.map((c) => (
-                <button
-                  onClick={handleSecondCardSelect(c)}
+                <CardItem
                   key={c.icon}
-                  className="bg-red-500 w-8 h-10 rounded-sm flex items-center justify-center hover:bg-red-600 transition-colors"
-                >
-                  <Icon
-                    solid
-                    name={c.icon}
-                    className="size-6 text-white shrink-0"
-                  />
-                </button>
+                  icon={c.icon}
+                  suit={c.suit}
+                  fn={handleSecondCardSelect(c)}
+                />
               ))}
             </div>
           </PopoverContent>
@@ -387,10 +382,73 @@ const PlayerRow = ({
 
 export const Studio = () => {
   const { setDealerUpCard, dealerUpCard } = useStudioCtx();
+  const blackjackCtx = useBlackjackCtx();
 
   const [playerHands, setPlayerHands] = useState<PlayerHand[]>([
     { id: 1, firstCard: undefined, secondCard: undefined },
   ]);
+
+  // Track studio cards for engine synchronization
+  const [, setStudioCards] = useState<CustomCard[]>([]);
+
+  // Update studio cards and sync with engine whenever selections change
+  useEffect(() => {
+    const currentCards: CustomCard[] = [];
+
+    if (dealerUpCard) {
+      currentCards.push(dealerUpCard);
+    }
+
+    playerHands.forEach((hand) => {
+      if (hand.firstCard) currentCards.push(hand.firstCard);
+      if (hand.secondCard) currentCards.push(hand.secondCard);
+    });
+
+    // Only sync if we're in betting state
+    if (blackjackCtx.gameState === "betting") {
+      // Reset deck first to clear any previous studio cards
+      blackjackCtx.shuffleDeck();
+
+      // Deal each studio card to the engine
+      currentCards.forEach((customCard) => {
+        const engineCard = convertCustomCardToCard(customCard);
+        blackjackCtx.dealSpecificCard(engineCard);
+      });
+    }
+
+    setStudioCards(currentCards);
+  }, [dealerUpCard, playerHands, blackjackCtx]);
+
+  // Create a simulated remaining cards calculation based on studio selections
+  const getStudioRemainingCards = useCallback(() => {
+    // Start with the actual remaining cards from the blackjack engine
+    const actualRemaining = blackjackCtx.getRemainingCardsByRank();
+    const studioRemaining = { ...actualRemaining };
+
+    // Remove the cards that are "dealt" in the studio
+    const allStudioCards: CustomCard[] = [];
+
+    // Add dealer up card if selected
+    if (dealerUpCard) {
+      allStudioCards.push(dealerUpCard);
+    }
+
+    // Add all player cards
+    playerHands.forEach((hand) => {
+      if (hand.firstCard) allStudioCards.push(hand.firstCard);
+      if (hand.secondCard) allStudioCards.push(hand.secondCard);
+    });
+
+    // Subtract studio cards from remaining count
+    allStudioCards.forEach((customCard) => {
+      const rank = customCard.rank;
+      if (studioRemaining[rank] > 0) {
+        studioRemaining[rank]--;
+      }
+    });
+
+    return studioRemaining;
+  }, [dealerUpCard, playerHands, blackjackCtx]);
 
   const selectDealerCard = useCallback(
     (item: CustomCard) => () => setDealerUpCard(item),
@@ -427,6 +485,9 @@ export const Studio = () => {
     setDealerUpCard(undefined);
     setPlayerHands([{ id: 1, firstCard: undefined, secondCard: undefined }]);
   }, [setDealerUpCard]);
+
+  const [showGuide, setShowGuide] = useState(false);
+  const toggleGuide = useCallback(() => setShowGuide((prev) => !prev), []);
 
   return (
     <CardComp className="h-[calc(100vh-64px)] portrait:min-h-[calc(100vh-64px)] py-0 lg:col-span-5 bg-poker-dark border-transparent rounded-b-3xl">
@@ -466,17 +527,12 @@ export const Studio = () => {
               <PopoverContent className="w-full">
                 <div className="grid grid-cols-13 gap-1 max-w-md">
                   {deckOfCards.map((c) => (
-                    <button
-                      onClick={selectDealerCard(c)}
+                    <CardItem
                       key={c.icon}
-                      className="bg-red-500 w-8 h-10 rounded-sm flex items-center justify-center hover:bg-red-600 transition-colors"
-                    >
-                      <Icon
-                        solid
-                        name={c.icon}
-                        className="size-6 text-white shrink-0"
-                      />
-                    </button>
+                      icon={c.icon}
+                      suit={c.suit}
+                      fn={selectDealerCard(c)}
+                    />
                   ))}
                 </div>
               </PopoverContent>
@@ -497,25 +553,37 @@ export const Studio = () => {
             key={hand.id}
             hand={hand}
             dealerUpCard={dealerUpCard}
+            getRemainingCards={getStudioRemainingCards}
             onUpdateHand={updatePlayerHand}
             onRemoveHand={removePlayerHand}
           />
         ))}
 
         {/* Add Player Hand Button */}
-        <div className="my-4">
+        <div className="my-4 flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={addPlayerHand}
-            className="w-full border-2 border-dashed border-zinc-600 hover:border-zinc-500 hover:bg-zinc-800/50 transition-colors"
+            className=" hover:border-zinc-500 hover:bg-zinc-800/50 transition-colors"
           >
-            <Icon name="add-circle" className="w-4 h-4 mr-2" />
+            <Icon name="add-circle" className="size-5" />
             Add Player Hand
+          </Button>
+          <Button
+            onClick={toggleGuide}
+            variant="ghost"
+            className="tracking-tighter"
+          >
+            How to use ?
           </Button>
         </div>
 
         {/* Studio Instructions */}
-        <div className="mt-6 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700">
+        <div
+          className={cn("mt-6 p-4 bg-zinc-800 flex-col rounded-lg hidden", {
+            flex: showGuide,
+          })}
+        >
           <h3 className="text-sm font-bold text-neutral-300 mb-2">
             How to Use Strategy Studio:
           </h3>
@@ -530,5 +598,27 @@ export const Studio = () => {
         </div>
       </CardContent>
     </CardComp>
+  );
+};
+
+interface CardItemProps {
+  suit: CardSuit;
+  icon: IconName;
+  fn: VoidFunction;
+}
+const CardItem = ({ fn, icon, suit }: CardItemProps) => {
+  return (
+    <button
+      onClick={fn}
+      key={icon}
+      className={cn(
+        "bg-red-500 w-8 h-10 hover:opacity-80 cursor-pointer rounded-sm flex items-center justify-center transition-colors",
+        {
+          "bg-zinc-900": suit === "clubs" || suit === "spades",
+        },
+      )}
+    >
+      <Icon solid name={icon} className="size-12 text-white shrink-0" />
+    </button>
   );
 };
