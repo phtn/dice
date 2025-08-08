@@ -26,18 +26,37 @@ interface StudioCtxValues {
   setDealerUpCard: Dispatch<SetStateAction<CustomCard | undefined>>;
   dealerHand: Hand | null;
   dealerUpCard: CustomCard | undefined;
+  createPlayerHand: VoidFunction;
+  playerHand: Hand | null;
+  playerFirstCard: CustomCard | undefined;
+  playerSecondCard: CustomCard | undefined;
+  setPlayerFirstCard: Dispatch<SetStateAction<CustomCard | undefined>>;
+  setPlayerSecondCard: Dispatch<SetStateAction<CustomCard | undefined>>;
 }
 
 const StudioCtx = createContext<StudioCtxValues | null>(null);
 
 const StudioCtxProvider = ({ children }: StudioProviderProps) => {
   const [dealerUpCard, setDealerUpCard] = useState<CustomCard>();
+  const [playerFirstCard, setPlayerFirstCard] = useState<CustomCard>();
+  const [playerSecondCard, setPlayerSecondCard] = useState<CustomCard>();
   const [dealerHand, setDealerHand] = useState<Hand | null>(null);
+  const [playerHand, setPlayerHand] = useState<Hand | null>(null);
 
   const engineRef = useRef(new BlackjackEngine(8));
   const engine = engineRef.current;
 
   const dealtDealerUpCard = engine.dealCard(dealerUpCard);
+  const dealtPlayerFirstCard = engine.dealCard(playerFirstCard);
+  const dealtPlayerSecondCard = engine.dealCard(playerSecondCard);
+
+  const createPlayerHand = useCallback(() => {
+    if (dealtPlayerFirstCard && dealtPlayerSecondCard) {
+      setPlayerHand(
+        engine.createHand([dealtPlayerFirstCard, dealtPlayerSecondCard]),
+      );
+    }
+  }, [dealtPlayerFirstCard, dealtPlayerSecondCard, engine]);
 
   const createDealerHand = useCallback(() => {
     const newDealearHand =
@@ -51,8 +70,25 @@ const StudioCtxProvider = ({ children }: StudioProviderProps) => {
       setDealerUpCard,
       dealerHand,
       dealerUpCard,
+      playerHand,
+      playerFirstCard,
+      playerSecondCard,
+      setPlayerFirstCard,
+      setPlayerSecondCard,
+      createPlayerHand,
     }),
-    [createDealerHand, setDealerUpCard, dealerHand, dealerUpCard],
+    [
+      createDealerHand,
+      setDealerUpCard,
+      dealerHand,
+      dealerUpCard,
+      playerHand,
+      playerFirstCard,
+      playerSecondCard,
+      setPlayerFirstCard,
+      setPlayerSecondCard,
+      createPlayerHand,
+    ],
   );
   return <StudioCtx value={value}>{children}</StudioCtx>;
 };
