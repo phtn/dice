@@ -517,10 +517,10 @@ export const Studio = () => {
                   {dealerUpCard ? (
                     <Icon
                       name={dealerUpCard.icon}
-                      className="h-28 w-24 shrink-0"
+                      className="h-28 w-24 shrink-0 text-six-nine"
                     />
                   ) : (
-                    <Icon name="g-card-draw" className="h-28 w-24 shrink-0" />
+                    <Icon name="g-card-draw" className="h-24 w-20 shrink-0" />
                   )}
                 </div>
               </PopoverTrigger>

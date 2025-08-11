@@ -9,21 +9,18 @@ import { useRNGCtx } from "@/ctx/rng-ctx";
 import { cn } from "@/lib/utils";
 import { useBetCtx } from "@/ctx/bet-ctx";
 import { useSFX } from "@/lib/hooks/use-sfx";
+import { quart } from "@/ctx/bet-ctx/helpers";
 
 export const SliderRow = () => {
   const { result } = useRNGCtx();
-  const { setMult, isAutoplaying, gameType } = useBetCtx();
+  const { setMult, isAutoplaying } = useBetCtx();
 
-  const [prevRandomNumber, setPrevRandomNumber] = useState(
-    gameType === "dice" ? 0 : 1.01,
-  ); // Track previous value
+  const [prevRandomNumber, setPrevRandomNumber] = useState(0); // Track previous value
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFirstRun, setIsFirstRun] = useState(true);
   const [tilt, setTilt] = useState(0);
-  const [sliderValue, setSliderValue] = useState<number[]>([
-    gameType === "dice" ? 50 : 1,
-  ]);
+  const [sliderValue, setSliderValue] = useState<number[]>([50]);
   const sliderContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate tilt based on movement direction and distance
@@ -65,9 +62,9 @@ export const SliderRow = () => {
     (value: number[]) => {
       setIsPlaying(false);
       setSliderValue(value);
-      setMult(value[0], gameType);
+      setMult(value[0], "dice");
     },
-    [setMult, gameType],
+    [setMult],
   );
 
   const absChg = useMemo(
@@ -79,16 +76,13 @@ export const SliderRow = () => {
   const { winSFX: fx, stepSFX: step } = useSFX();
 
   const sV = useMemo(
-    () =>
-      gameType === "dice"
-        ? Math.floor(sliderValue[0])
-        : sliderValue[0] / 11.2 + 1,
-    [gameType, sliderValue],
+    () => Math.floor(sliderValue[0]),
+    [sliderValue],
   );
 
   const rV = useMemo(
-    () => (gameType === "dice" ? Math.floor(result) : (1 / result) * 98),
-    [gameType, result],
+    () => Math.floor(result),
+    [result],
   );
   useEffect(() => {
     if (isPlaying) {
@@ -113,9 +107,7 @@ export const SliderRow = () => {
           id="hex-result"
           key={`random-${rV}`}
           initial={{
-            left: isFirstRun
-              ? "0%"
-              : `${gameType === "dice" && prevRandomNumber}%`,
+            left: isFirstRun ? "0%" : `${prevRandomNumber}%`,
             rotate: 0,
             scale: 1,
           }}
@@ -185,27 +177,24 @@ export const SliderRow = () => {
         <motion.div
           className="absolute font-mono -top-9 rounded-full bg-zinc-950 leading-none transform -translate-x-1/2 text-zinc-300 font-bold px-2 pt-1.5 text-xs"
           animate={{
-            left: `${gameType === "dice" && sV}%`,
+            left: `${sV}%`,
           }}
         >
-          {sV.toFixed(2)}
+          {quart(sliderValue[0]).toFixed(2)}x
         </motion.div>
 
         {/* Slider Background */}
         <div
           className="absolute -top-1 inset-0 rounded-full"
           style={{
-            background:
-              gameType === "dice"
-                ? `linear-gradient(to right, #f87171 0%, #f87171 ${sV}%, #4ade80 ${sV}%, #4ade80 100%)`
-                : "",
+            background: `linear-gradient(to right, #f87171 0%, #f87171 ${sV}%, #4ade80 ${sV}%, #4ade80 100%)`,
           }}
         />
 
         {/* Slider Component */}
         <Slider
-          step={gameType === "dice" ? 1 : 0.01}
-          min={gameType === "dice" ? 2 : 0.1}
+          step={1}
+          min={2}
           max={99.99}
           value={sliderValue}
           disabled={isAutoplaying}
@@ -218,9 +207,7 @@ export const SliderRow = () => {
           className="absolute -ml-[14px] justify-center top-4 pointer-events-none select-none"
         >
           <Image
-            className={cn("dark:invert relative", {
-              "rotate-180": gameType === "limbo",
-            })}
+            className="relative"
             src="/vercel.svg"
             alt="Delta Pointer"
             width={28}
@@ -229,7 +216,7 @@ export const SliderRow = () => {
         </div>
       </div>
 
-      {gameType === "dice" ? <DiceRange /> : <LimboRange />}
+      <DiceRange />
     </div>
   );
 };
@@ -245,20 +232,4 @@ const DiceRange = () => (
     <span className="w-full flex justify-end">100</span>
   </div>
 );
-const LimboRange = () => (
-  <div className="flex justify-between pointer-events-none select-none text-zinc-400/80">
-    <span className="flex w-full">1</span>
-    <span className="flex w-full">2</span>
-    <span className="flex w-full">3</span>
-    <span className="flex w-full">4</span>
-    <div className="px-1.5 flex border justify-center rounded-md border-zinc-400/30">
-      <span className="text-zinc-400">5</span>
-    </div>
 
-    <span className="w-full flex justify-end">6</span>
-    <span className="w-full flex justify-end">7</span>
-    <span className="w-full flex justify-end">8</span>
-    <span className="w-full flex justify-end">9</span>
-    <span className="w-full flex justify-end">10</span>
-  </div>
-);

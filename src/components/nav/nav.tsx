@@ -61,7 +61,7 @@ const NavItem = (item: INavItem) => {
       <span className="text-sm md:text-base uppercase hidden md:flex">
         {item.label.split("").map((c, i) =>
           vowels.includes(c) ? (
-            <span key={i} className="-mx-0.5 text-six-nine">
+            <span key={i} className="-mx-0.5 text-white">
               {item.suits[vowels.indexOf(c)] ?? c}
             </span>
           ) : (

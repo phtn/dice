@@ -71,10 +71,8 @@ const BetCtxProvider = ({ children }: BetProviderProps) => {
     [balance?.amount],
   );
 
-  const setMult = useCallback((current: number, game: GameType) => {
-    setMultiplier(() =>
-      game === "dice" ? quart(current) : current / 11.2 + 1,
-    );
+  const setMult = useCallback((current: number) => {
+    setMultiplier(() => quart(current));
     setX(current);
   }, []);
 

@@ -36,9 +36,9 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
 
   const updateBalance = useCallback(
     async (amount: number) => {
-      const currentBal = { ...balance, amount: balance.amount + amount };
-      await setAccount({ id: generateId(), balance: currentBal });
-      setBalance(currentBal);
+      const newBal = { ...balance, amount: amount };
+      await setAccount({ id: generateId(), balance: newBal });
+      setBalance(newBal);
     },
     [balance],
   );

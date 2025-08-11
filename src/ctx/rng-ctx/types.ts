@@ -3,4 +3,4 @@ export interface Result {
   type: "win" | "lose";
 }
 
-export type GameType = "dice" | "limbo";
+export type GameType = "dice";

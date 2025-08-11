@@ -33,7 +33,7 @@ export const ControlRow = () => {
     betfx();
     const currentBetAmount = betAmount; // Capture current bet amount
     const currentMultiplier = multiplier; // Capture current multiplier
-    // const currentX = x; // Capture current x
+    const currentBalance = balance?.amount ?? 0; // Capture current balance
 
     rollDice(
       {
@@ -46,22 +46,31 @@ export const ControlRow = () => {
       (r = result) => {
         generateSeeds();
 
-        const balAmount =
-          balance &&
-          balance.amount +
-            currentBetAmount * (r < x ? -1 : currentMultiplier) -
-            (r < x ? 0 : currentBetAmount);
-        updateBalance(balAmount ?? 0 - currentBetAmount);
+        const isWin = r > x;
+        let newBalance = currentBalance;
+
+        // Only update balance if there's a bet amount
+        if (currentBetAmount > 0) {
+          if (isWin) {
+            // Win: add profit (multiplier - 1) * bet
+            newBalance = currentBalance + (currentBetAmount * (currentMultiplier - 1));
+          } else {
+            // Loss: subtract bet amount
+            newBalance = currentBalance - currentBetAmount;
+          }
+          updateBalance(newBalance);
+        }
+
         setResults((prev) => [
           ...prev,
-          { value: r, type: r > x ? "win" : "lose" },
+          { value: r, type: isWin ? "win" : "lose" },
         ]);
       },
     );
   }, [
     x,
     result,
-    balance,
+    balance?.amount,
     seedPair,
     rollDice,
     betAmount,
