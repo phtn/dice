@@ -42,7 +42,7 @@ interface BlackjackCtxValues {
   setBetAmount: Dispatch<SetStateAction<number>>;
 
   // Game actions
-  startNewGame: () => void;
+  startNewGame: (slotBets?: { [key: number]: number }) => void;
   hit: () => void;
   stand: () => void;
   doubleDown: () => void;
@@ -270,7 +270,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
       // Add total winnings to balance
       if (totalWinAmount > 0) {
-        updateBalance?.(totalWinAmount);
+        const currentBalance = balance?.amount ?? 0;
+        updateBalance?.(currentBalance + totalWinAmount);
       }
 
       // Net winnings calculation is handled in GameHistoryManager.saveGame
@@ -315,92 +316,116 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       startNewBet,
       updateBalance,
       autoReturnToBetting,
+      balance?.amount,
     ],
   );
 
-  const dealerPlay = useCallback((currentPlayerHands?: PlayerHand[]) => {
-    setGameState("dealer-turn");
+  const dealerPlay = useCallback(
+    (currentPlayerHands?: PlayerHand[]) => {
+      setGameState("dealer-turn");
 
-    const playDealerRecursive = (currentDealerHand: Hand) => {
-      // Debug logging to track dealer behavior
-      console.log(
-        "Dealer hand value:",
-        currentDealerHand.value,
-        "Should hit:",
-        engine.shouldDealerHit(currentDealerHand),
-      );
-      if (engine.shouldDealerHit(currentDealerHand)) {
-        const newCard = engine.dealCard();
-        if (newCard) {
-          const newCards = [...currentDealerHand.cards, newCard];
-          const newHand = engine.createHand(newCards);
-          setDealerHand(newHand);
+      const playDealerRecursive = (currentDealerHand: Hand) => {
+        // Debug logging to track dealer behavior
+        console.log(
+          "Dealer hand value:",
+          currentDealerHand.value,
+          "Should hit:",
+          engine.shouldDealerHit(currentDealerHand),
+        );
+        if (engine.shouldDealerHit(currentDealerHand)) {
+          const newCard = engine.dealCard();
+          if (newCard) {
+            const newCards = [...currentDealerHand.cards, newCard];
+            const newHand = engine.createHand(newCards);
+            setDealerHand(newHand);
 
-          // Continue dealer play after a short delay
-          setTimeout(() => playDealerRecursive(newHand), 1000);
-          return;
-        } else {
-          // No more cards available, end game
-          processGameEnd(currentDealerHand, currentPlayerHands);
-          return;
+            // Continue dealer play after a short delay
+            setTimeout(() => playDealerRecursive(newHand), 1000);
+            return;
+          } else {
+            // No more cards available, end game
+            processGameEnd(currentDealerHand, currentPlayerHands);
+            return;
+          }
         }
+
+        // Dealer is done (17 or higher), process all hands
+        console.log("Dealer stops at:", currentDealerHand.value);
+        processGameEnd(currentDealerHand, currentPlayerHands);
+      };
+
+      // Start dealer play after a short delay
+      setTimeout(() => playDealerRecursive(dealerHand), 500);
+    },
+    [dealerHand, engine, processGameEnd],
+  );
+
+  const startNewGame = useCallback(
+    (slotBets?: { [key: number]: number }) => {
+      // If slotBets provided, use them; otherwise fall back to single bet
+      const betsToUse = slotBets || { 0: betAmount };
+      const activeBets = Object.entries(betsToUse).filter(([, bet]) => bet > 0);
+
+      if (activeBets.length === 0 || (balance?.amount ?? 0) < betAmount) {
+        return; // Invalid bet
       }
 
-      // Dealer is done (17 or higher), process all hands
-      console.log("Dealer stops at:", currentDealerHand.value);
-      processGameEnd(currentDealerHand, currentPlayerHands);
-    };
+      // Deduct total bet from balance
+      const currentBalance = balance?.amount ?? 0;
+      updateBalance?.(currentBalance - betAmount);
 
-    // Start dealer play after a short delay
-    setTimeout(() => playDealerRecursive(dealerHand), 500);
-  }, [dealerHand, engine, processGameEnd]);
+      // Deal dealer cards first
+      const dealerCards: Card[] = [];
+      const dealerCard1 = engine.dealCard();
+      const dealerCard2 = engine.dealCard();
+      if (dealerCard1) dealerCards.push(dealerCard1);
+      if (dealerCard2) dealerCards.push(dealerCard2);
+      const newDealerHand = engine.createHand(dealerCards);
 
-  const startNewGame = useCallback(() => {
-    if (betAmount <= 0 || (balance?.amount ?? 0) < betAmount) {
-      return; // Invalid bet
-    }
+      // Create player hands for each active slot
+      const newPlayerHands: PlayerHand[] = [];
+      let hasBlackjack = false;
 
-    // Deduct bet from balance
-    updateBalance?.(-betAmount);
+      activeBets.forEach(([slotIndex, slotBet], handIndex) => {
+        const playerCards: Card[] = [];
 
-    // Reset hands
-    const playerCards: Card[] = [];
-    const dealerCards: Card[] = [];
+        // Deal two cards for this hand
+        const playerCard1 = engine.dealCard();
+        const playerCard2 = engine.dealCard();
 
-    // Deal initial cards in proper blackjack order: Player → Dealer → Player → Dealer
-    const playerCard1 = engine.dealCard();
-    const dealerCard1 = engine.dealCard();
-    const playerCard2 = engine.dealCard();
-    const dealerCard2 = engine.dealCard();
+        if (playerCard1) playerCards.push(playerCard1);
+        if (playerCard2) playerCards.push(playerCard2);
 
-    if (playerCard1) playerCards.push(playerCard1);
-    if (playerCard2) playerCards.push(playerCard2);
-    if (dealerCard1) dealerCards.push(dealerCard1);
-    if (dealerCard2) dealerCards.push(dealerCard2);
+        const newPlayerHand = engine.createHand(playerCards);
 
-    const newPlayerHand = engine.createHand(playerCards);
-    const newDealerHand = engine.createHand(dealerCards);
+        if (newPlayerHand.isBlackjack) {
+          hasBlackjack = true;
+        }
 
-    // Create initial player hand
-    const initialPlayerHand: PlayerHand = {
-      id: "1",
-      ...newPlayerHand,
-      betAmount,
-      isActive: true,
-    };
+        const playerHand: PlayerHand = {
+          id: `slot-${slotIndex}`,
+          ...newPlayerHand,
+          betAmount: slotBet,
+          isActive: handIndex === 0, // First hand is active
+        };
 
-    setPlayerHands([initialPlayerHand]);
-    setDealerHand(newDealerHand);
-    setActiveHandIndex(0);
-    setGameResult(null);
+        newPlayerHands.push(playerHand);
+      });
 
-    // Check for immediate blackjacks
-    if (newPlayerHand.isBlackjack || newDealerHand.isBlackjack) {
-      processGameEnd(newDealerHand);
-    } else {
-      setGameState("player-turn");
-    }
-  }, [betAmount, balance?.amount, updateBalance, engine, processGameEnd]);
+      setPlayerHands(newPlayerHands);
+      setDealerHand(newDealerHand);
+      setActiveHandIndex(0);
+      setGameResult(null);
+
+      // Check for immediate blackjacks
+      if (hasBlackjack || newDealerHand.isBlackjack) {
+        processGameEnd(newDealerHand, newPlayerHands);
+      } else {
+        setGameState("player-turn");
+      }
+    },
+    [betAmount, balance?.amount, updateBalance, engine, processGameEnd],
+  );
 
   const findNextPlayableHand = useCallback(
     (startIndex: number, hands: PlayerHand[]): number => {
@@ -516,7 +541,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     if ((balance?.amount ?? 0) < currentHand.betAmount) return;
 
     // Double the bet
-    updateBalance?.(-currentHand.betAmount);
+    const currentBalance = balance?.amount ?? 0;
+    updateBalance?.(currentBalance - currentHand.betAmount);
 
     // Hit once and then stand
     const newCard = engine.dealCard();
@@ -561,7 +587,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     if ((balance?.amount ?? 0) < currentHand.betAmount) return;
 
     // Deduct additional bet for split hand
-    updateBalance?.(-currentHand.betAmount);
+    const currentBalance = balance?.amount ?? 0;
+    updateBalance?.(currentBalance - currentHand.betAmount);
 
     // Split the hand
     const { hand1, hand2 } = engine.splitHand(currentHand);

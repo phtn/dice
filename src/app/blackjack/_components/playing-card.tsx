@@ -1,6 +1,7 @@
 "use client";
 
 import { Card as CardType } from "@/ctx/blackjack-ctx";
+import { Icon } from "@/lib/icons";
 
 interface PlayingCardProps {
   card: CardType;
@@ -40,24 +41,29 @@ export const PlayingCard = ({ card, hidden = false }: PlayingCardProps) => {
   return (
     <div className="w-[4.25rem] h-24 bg-white rounded-md flex flex-col justify-between p-1.5 relative shadow-lg">
       {/* Top left corner */}
-      <div className={`text-xs font-bold ${suitColor} leading-none`}>
+      <div
+        className={`text-2xl flex items-center justify-between tracking-tighter font-redhat font-semibold ${suitColor} leading-none`}
+      >
         <div>{card.rank}</div>
-        <div className="text-center">{suitSymbol}</div>
+        <div>{suitSymbol}</div>
       </div>
 
       {/* Center symbol */}
       <div
         className={`absolute inset-0 flex items-center justify-center ${suitColor}`}
       >
-        <div className="text-2xl">{suitSymbol}</div>
+        <Icon
+          name="blackjack"
+          className="size-3 opacity-60 border border-zinc-300 rounded-sm"
+        />
       </div>
 
       {/* Bottom right corner (rotated) */}
       <div
-        className={`${suitColor} leading-none self-end transform rotate-180`}
+        className={`text-2xl rotate-180 flex items-center justify-between tracking-tighter font-redhat font-semibold ${suitColor} leading-none`}
       >
-        <div className="text-sm font-redhat">{card.rank}</div>
-        <div className="text-center text-[6px]">{suitSymbol}</div>
+        <div>{card.rank}</div>
+        <div>{suitSymbol}</div>
       </div>
     </div>
   );

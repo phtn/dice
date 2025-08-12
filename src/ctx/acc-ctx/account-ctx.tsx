@@ -33,6 +33,7 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
     currencyCode: "USD",
     fractionalDigits: 2,
   });
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const updateBalance = useCallback(
     async (amount: number) => {
@@ -58,8 +59,14 @@ const AccountCtxProvider = ({ children }: AccountProviderProps) => {
   }, []);
 
   useEffect(() => {
-    getBalance().catch(console.error);
-  }, [getBalance]);
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      getBalance().catch(console.error);
+    }
+  }, [getBalance, isHydrated]);
 
   const value = useMemo(
     () => ({

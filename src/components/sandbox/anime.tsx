@@ -1,9 +1,5 @@
-import { createAnimatable, createTimeline } from "animejs";
-import { ChangeEvent, FC, useEffect, useRef, useState } from "react";
-
-// Dynamic import for animejs to avoid module resolution issues
-let anime: unknown;
-
+import { waapi, createTimeline, createAnimatable } from "animejs";
+import { FC, useRef, useState, useEffect, ChangeEvent } from "react";
 interface Particle {
   id: number;
   x: number;
@@ -12,24 +8,15 @@ interface Particle {
   delay: number;
   element?: HTMLDivElement;
 }
-
-export const HyperDeal: FC = () => {
+export const HyperBurst: FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [precision, setPrecision] = useState<number>(1);
   const [speed, setSpeed] = useState<number>(1);
-  const [intensity, setIntensity] = useState<number>(150);
+  const [intensity, setIntensity] = useState<number>(50);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const animationRef = useRef<Animation>(null);
-
-  // Load animejs dynamically
-  useEffect(() => {
-    const loadAnime = async () => {
-      if (!anime) {
-        anime = await import("animejs");
-      }
-    };
-    loadAnime();
-  }, []);
+  const [isClient, setIsClient] = useState(false);
+  const animationRef = useRef<Animation | null>(null);
+  const rectRef = useRef<ReturnType<typeof waapi.animate> | null>(null);
 
   // Utility function to generate random numbers
   const random = (min: number, max: number, decimals: number = 0): number => {
@@ -37,8 +24,31 @@ export const HyperDeal: FC = () => {
     return decimals === 0 ? Math.floor(value) : Number(value.toFixed(decimals));
   };
 
-  // Initialize particles
+  // Set client-side flag
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Initialize rect animation on client side
+  useEffect(() => {
+    if (isClient && typeof window !== "undefined") {
+      // Only create the card animation if there's an element with .card class
+      const cardElement = document.querySelector(".card");
+      if (cardElement) {
+        rectRef.current = waapi.animate(".card", {
+          x: "15rem",
+          y: [0, "1.5rem", 0],
+          rotateZ: 360,
+          duration: 750,
+        });
+      }
+    }
+  }, [isClient]);
+
+  // Initialize particles only on client side
+  useEffect(() => {
+    if (!isClient) return;
+
     const newParticles: Particle[] = [];
     for (let i = 0; i < intensity; i++) {
       newParticles.push({
@@ -50,15 +60,15 @@ export const HyperDeal: FC = () => {
       });
     }
     setParticles(newParticles);
-  }, [intensity]);
+  }, [intensity, isClient]);
 
   // Start Anime.js animation
   useEffect(() => {
-    if (particles.length === 0 || !anime) return;
+    if (!isClient || particles.length === 0) return;
 
     // Stop previous animation
     if (animationRef.current) {
-      animationRef.current.pause();
+      // animationRef.current.pause();
     }
 
     // Wait for DOM elements to be created
@@ -69,8 +79,14 @@ export const HyperDeal: FC = () => {
 
       // Create timeline for smooth, continuous animation
       const timeline = createTimeline({
+        defaults: { duration: 1000 },
         loop: true,
       });
+
+      // Only sync with rect animation if it exists
+      if (rectRef.current) {
+        timeline.sync(rectRef.current, 0);
+      }
 
       particleElements.forEach((element, index) => {
         const particle = particles[index];
@@ -84,7 +100,7 @@ export const HyperDeal: FC = () => {
         });
 
         // Add breathing/pulsing animation for each particle
-        timeline.add(
+        timeline.label("start").add(
           element,
           {
             scale: [
@@ -97,7 +113,7 @@ export const HyperDeal: FC = () => {
             ],
             rotate: random(0, 360),
             delay: particle.delay,
-            duration: 2000 * speed,
+            duration: 1000 * speed,
           },
           0,
         ); // Start all animations at the same time with individual delays
@@ -108,23 +124,22 @@ export const HyperDeal: FC = () => {
           {
             translateX: particle.x + random(-20, 20),
             translateY: particle.y + random(-20, 20),
-            duration: 4000 * speed,
             delay: particle.delay,
             direction: "alternate",
+            loop: true,
           },
           0,
         );
       });
-
       animationRef.current = timeline as unknown as Animation;
     }, 100);
 
     return () => {
       if (animationRef.current) {
-        animationRef.current.pause();
+        animationRef.current.play();
       }
     };
-  }, [particles, precision, speed]);
+  }, [particles, precision, speed, isClient]);
 
   const handlePrecisionChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPrecision(parseInt(event.target.value, 10));
@@ -151,7 +166,7 @@ export const HyperDeal: FC = () => {
         {particles.map((particle) => (
           <div
             key={particle.id}
-            className="particle absolute rounded-full transition-all duration-1000 ease-in-out"
+            className="particle absolute"
             style={{
               left: "50%",
               top: "50%",
@@ -160,7 +175,6 @@ export const HyperDeal: FC = () => {
               background: `hsl(${200 + random(-50, 50)}, 70%, ${50 + random(-20, 30)}%)`,
               boxShadow: `0 0 ${random(10, 20)}px currentColor`,
               filter: "blur(0.5px)",
-              transform: `translate(-50%, -50%) translate(${particle.x}px, ${particle.y}px) scale(${anime ? 0 : particle.baseScale * (precision / 10 + 0.1)})`,
             }}
           />
         ))}

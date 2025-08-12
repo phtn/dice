@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useEffect, useRef } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { createTimeline, createAnimatable } from "animejs";
 
 interface SubtleCardAnimationProps {
@@ -15,6 +15,11 @@ export const SubtleCardAnimation: FC<SubtleCardAnimationProps> = ({
   dealSpeed = 1,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (!isDealing || !containerRef.current) return;
@@ -109,8 +114,8 @@ export const SubtleCardAnimation: FC<SubtleCardAnimationProps> = ({
           }
           100% {
             transform: translate(
-                ${Math.random() * 100 - 50}px,
-                ${Math.random() * 100 - 50}px
+                ${isClient ? Math.random() * 100 - 50 : 0}px,
+                ${isClient ? Math.random() * 100 - 50 : 0}px
               )
               scale(0);
             opacity: 0;

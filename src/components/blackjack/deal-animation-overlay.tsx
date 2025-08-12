@@ -21,6 +21,11 @@ export const DealAnimationOverlay: FC<DealAnimationOverlayProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Load animejs dynamically
   useEffect(() => {
@@ -190,14 +195,14 @@ export const DealAnimationOverlay: FC<DealAnimationOverlayProps> = ({
       <style jsx>{`
         @keyframes dealBurst {
           0% {
-            transform: rotate(${Math.random() * 360}deg) translateY(0) scale(1);
+            transform: rotate(${isClient ? Math.random() * 360 : 0}deg) translateY(0) scale(1);
             opacity: 0.8;
           }
           50% {
             opacity: 0.6;
           }
           100% {
-            transform: rotate(${Math.random() * 360}deg) translateY(-100px)
+            transform: rotate(${isClient ? Math.random() * 360 : 0}deg) translateY(-100px)
               scale(0);
             opacity: 0;
           }

@@ -10,6 +10,10 @@ import {
 import { StrategyGuide } from "@/components/blackjack/strategy-guide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StrategyAssistant } from "@/components/blackjack/strategy-assistant";
+import { useMemo } from "react";
+import { HyperList } from "@/components/hyper/list";
+import { StatCard } from "@/components/hyper/stat-card";
+import { Icon } from "@/lib/icons";
 
 interface Props {
   toggleActiveOption: VoidFunction;
@@ -25,7 +29,7 @@ export const InfoCard = ({ toggleActiveOption }: Props) => {
   return (
     <Tabs
       defaultValue={"stats"}
-      className="lg:col-span-4 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden"
+      className="lg:col-span-3 bg-neutral-900/0 -pt-8 max-h-[calc(100vh-64px)] overflow-hidden"
     >
       <TabsList className="dark:bg-zinc-700/20 w-full inset-shadow-[0_0.5px_rgb(255_255_255/0.20)] space-x-6 overflow-hidden">
         <TabsTrigger
@@ -63,6 +67,17 @@ interface GameStatsProps {
 }
 
 const GameStatsSection = ({ stats }: GameStatsProps) => {
+  const game_data = useMemo(
+    () => [
+      { label: "total games", value: stats.totalGames },
+      { label: "win rate", value: stats.winRate.toFixed(1) },
+      { label: "blackjacks", value: stats.totalBlackjacks },
+      { label: "net winnings", value: stats.totalWinnings },
+      { label: "biggest win", value: stats.biggestWin },
+      { label: "biggest loss", value: stats.biggestLoss },
+    ],
+    [stats],
+  );
   return (
     <div className="bg-zinc-0">
       <div className="flex items-center gap-2 mb-3">
@@ -72,7 +87,13 @@ const GameStatsSection = ({ stats }: GameStatsProps) => {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <HyperList
+        data={game_data}
+        component={StatCard}
+        container="grid grid-cols-3 gap-4"
+      />
+
+      {/*<div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
             <span className="text-neutral-400">Total Games</span>
@@ -92,9 +113,9 @@ const GameStatsSection = ({ stats }: GameStatsProps) => {
               {stats.totalBlackjacks}
             </span>
           </div>
-        </div>
+        </div>*/}
 
-        <div className="space-y-2">
+      {/*<div className="space-y-2">
           <div className="flex justify-between text-xs">
             <span className="text-neutral-400">Net Winnings</span>
             <span
@@ -116,7 +137,7 @@ const GameStatsSection = ({ stats }: GameStatsProps) => {
             </span>
           </div>
         </div>
-      </div>
+      </div>*/}
     </div>
   );
 };
@@ -138,7 +159,7 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
       case "dealer-wins":
         return "bg-red-500/60 text-white";
       case "dealer-blackjack":
-        return "bg-orange-400 text-white";
+        return "bg-orange-500 text-white";
       default:
         return "text-neutral-400";
     }
@@ -147,7 +168,7 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
   const getResultText = (result: string) => {
     switch (result) {
       case "player-blackjack":
-        return "BLACKJACK";
+        return "PBJ";
       case "player-wins":
         return "WIN";
       case "push":
@@ -155,7 +176,7 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
       case "dealer-wins":
         return "LOSS";
       case "dealer-blackjack":
-        return "DEALER BJ";
+        return "DBJ";
       default:
         return "UNKNOWN";
     }
@@ -225,11 +246,16 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
                 {/* First row: Result, bet, winnings, time */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center space-x-2">
-                    <div className="w-20">
+                    <div className="w-fit text-center">
                       <span
-                        className={`text-sm font-bold font-sans uppercase px-2 py-1.5 rounded-md ${getResultColor(game.overallResult ?? "")}`}
+                        className={`text-sm flex text-center font-bold font-sans uppercase px-2 py-1.5 rounded-md whitespace-nowrap ${getResultColor(game.overallResult ?? "")}`}
                       >
-                        {getResultText(game.overallResult ?? "")}
+                        {getResultText(game.overallResult ?? "") === "DBJ" ||
+                        getResultText(game.overallResult ?? "") === "PBJ" ? (
+                          <Icon name="blackjack" className="size-6" />
+                        ) : (
+                          getResultText(game.overallResult ?? "")
+                        )}
                       </span>
                     </div>
 
@@ -271,10 +297,12 @@ const RecentGamesSection = ({ games, onClearHistory }: RecentGamesProps) => {
                       {game.netWinnings}
                     </span>
                     <span className="text-neutral-500 text-xs">
-                      {new Date(game.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {typeof window !== "undefined"
+                        ? new Date(game.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : new Date(game.timestamp).toISOString().slice(11, 16)}
                     </span>
                   </div>
                 </div>

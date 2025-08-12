@@ -5,8 +5,6 @@ import { useRNGCtx } from "@/ctx/rng-ctx";
 import { useCallback, useMemo, useRef } from "react";
 import { HyperList } from "../hyper/list";
 import { useAccountCtx } from "@/ctx/acc-ctx/account-ctx";
-import { generateId } from "ai";
-import { setAccount } from "@/app/actions";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AUTOPLAYS, BetAmountMulticand } from "@/ctx/bet-ctx/bet-ctx";
@@ -24,7 +22,7 @@ export const ControlRow = () => {
     setAutoplayCount,
     setIsAutoplaying,
   } = useBetCtx();
-  const { balance, getBalance, updateBalance } = useAccountCtx();
+  const { balance, getBalance, updateBalance, resetBalance } = useAccountCtx();
   // const [bal, setBal] = useState<number | undefined>(balance?.amount);
 
   const { tickSFX: fx, clickSFX: betfx } = useSFX();
@@ -149,12 +147,9 @@ export const ControlRow = () => {
   );
 
   const handleSetAccount = useCallback(async () => {
-    await setAccount({
-      id: generateId(),
-      balance: { currencyCode: "PHP", fractionalDigits: 2, amount: 420.69 },
-    });
+    resetBalance();
     await getBalance();
-  }, [getBalance]);
+  }, [resetBalance, getBalance]);
 
   return (
     <div className="flex gap-4 items-center h-80 flex-col">

@@ -1,69 +1,61 @@
-import { ChangeEvent, FC, useEffect, useRef, useState } from "react";
-import { createTimeline, createAnimatable, waapi } from "animejs";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { createTimeline, createAnimatable, engine, utils } from "animejs";
+import { cn } from "@/lib/utils";
 
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  baseScale: number;
-  delay: number;
-  element?: HTMLDivElement;
+interface Props {
+  shouldAnimate?: boolean;
+  children?: ReactNode;
+  speed?: number;
+  duration?: number;
+  count?: number;
 }
-
-export const HyperBurst: FC = () => {
+export const Burst = ({
+  shouldAnimate = false,
+  speed = 60,
+  duration = 2500,
+  children,
+  count = 16,
+}: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [precision, setPrecision] = useState<number>(1);
-  const [speed, setSpeed] = useState<number>(1);
-  const [intensity, setIntensity] = useState<number>(50);
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const [_speed, setSpeed] = useState(speed);
+  const [_shouldAnimate] = useState(shouldAnimate);
+  const [particles, setParticles] = useState<
+    Array<{ id: number; x: number; y: number; scale: number; delay: number }>
+  >([]);
+  const [isClient, setIsClient] = useState(false);
   const animationRef = useRef<Animation | null>(null);
-  const rectRef = useRef<ReturnType<typeof waapi.animate> | null>(null);
 
   // Utility function to generate random numbers
-  const random = (min: number, max: number, decimals: number = 0): number => {
-    const value = Math.random() * (max - min) + min;
-    return decimals === 0 ? Math.floor(value) : Number(value.toFixed(decimals));
-  };
+  // const random = (min: number, max: number, decimals: number = 0): number => {
+  //   const value = Math.random() * (max - min) + min;
+  //   return decimals === 0 ? Math.floor(value) : Number(value.toFixed(decimals));
+  // };
 
-  // Initialize rect animation on client side
+  // Set client-side flag
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Only create the card animation if there's an element with .card class
-      const cardElement = document.querySelector('.card');
-      if (cardElement) {
-        rectRef.current = waapi.animate(".card", {
-          x: "15rem",
-          y: [0, "1.5rem", 0],
-          rotateZ: 360,
-          duration: 750,
-        });
-      }
-    }
+    setIsClient(true);
   }, []);
 
   // Initialize particles
   useEffect(() => {
-    const newParticles: Particle[] = [];
-    for (let i = 0; i < intensity; i++) {
+    if (!isClient) return;
+
+    const newParticles = [];
+    for (let i = 0; i < count; i++) {
       newParticles.push({
         id: i,
-        x: random(-160, 160, 1), // Spread across container width
-        y: random(-80, 80, 1), // Spread across container height
-        baseScale: random(0.2, 1.5, 2),
-        delay: random(0, 2000), // Stagger animations up to 2 seconds
+        x: utils.random(-10, 10, 1),
+        y: utils.random(-3, 3, 2),
+        scale: utils.random(0, _shouldAnimate ? 1.5 : 0, 0.0),
+        delay: utils.random(0, 1000),
       });
     }
     setParticles(newParticles);
-  }, [intensity]);
+  }, [isClient, count, _shouldAnimate]);
 
-  // Start Anime.js animation
+  // Create burst animation
   useEffect(() => {
-    if (particles.length === 0) return;
-
-    // Stop previous animation
-    if (animationRef.current) {
-      // animationRef.current.pause();
-    }
+    if (!isClient || particles.length === 0) return;
 
     // Wait for DOM elements to be created
     setTimeout(() => {
@@ -71,16 +63,17 @@ export const HyperBurst: FC = () => {
         containerRef.current?.querySelectorAll(".particle");
       if (!particleElements) return;
 
-      // Create timeline for smooth, continuous animation
-      const timeline = createTimeline({
-        defaults: { duration: 1000 },
-        loop: true,
-      });
-      
-      // Only sync with rect animation if it exists
-      if (rectRef.current) {
-        timeline.sync(rectRef.current, 0);
+      // Stop previous animation
+      if (animationRef.current) {
+        animationRef.current.pause();
       }
+
+      // Create timeline for burst effect
+      const timeline = createTimeline({
+        defaults: { duration },
+        loop: false,
+        autoplay: _shouldAnimate,
+      });
 
       particleElements.forEach((element, index) => {
         const particle = particles[index];
@@ -88,195 +81,97 @@ export const HyperBurst: FC = () => {
 
         // Set initial position and scale
         createAnimatable(element, {
-          translateX: particle.x,
-          translateY: particle.y,
+          translateX: 0,
+          translateY: 0,
           scale: 0,
+          rotate: 0,
         });
 
-        // Add breathing/pulsing animation for each particle
-        timeline.label("start").add(
-          element,
-          {
-            scale: [
-              { value: 0, duration: 0 },
-              {
-                value: particle.baseScale * (precision / 10 + 0.1),
-                duration: 1000 + random(-200, 200),
-              },
-              { value: 0, duration: 1000 + random(-200, 200) },
-            ],
-            rotate: random(0, 360),
-            delay: particle.delay,
-            duration: 1000 * speed,
-          },
-          0,
-        ); // Start all animations at the same time with individual delays
-
-        // Add subtle floating movement
+        // Add bursting animation
         timeline.add(
           element,
           {
-            translateX: particle.x + random(-20, 20),
-            translateY: particle.y + random(-20, 20),
-            duration: 1200 * speed,
+            translateX: particle.x + "rem",
+            translateY: particle.y + "rem",
+            opacity: [0, particle.scale, 0],
+            scale: [0, particle.scale, 0],
+            rotate: utils.random(-45, 45),
             delay: particle.delay,
-            direction: "alternate",
+            duration: duration + utils.random(0, 1000),
+            loop: false,
           },
           0,
         );
       });
+
       animationRef.current = timeline as unknown as Animation;
     }, 100);
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current && _shouldAnimate) {
         animationRef.current.play();
       }
     };
-  }, [particles, precision, speed]);
+  }, [particles, isClient, _shouldAnimate, duration]);
 
-  const handlePrecisionChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setPrecision(parseInt(event.target.value, 10));
-  };
-
-  const handleSpeedChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSpeed(parseFloat(event.target.value));
-  };
-
-  const handleIntensityChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setIntensity(parseInt(event.target.value, 10));
-  };
+  useEffect(() => {
+    engine.fps = _speed;
+  }, [_speed]);
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col items-center justify-center">
+    <div className="particles-wrapper flex flex-col items-center justify-center">
       <div
+        className="large row container relative flex items-center justify-center overflow-hidden backdrop-blur-sm rounded-xl"
         ref={containerRef}
-        className="container relative w-96 h-96 bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 0.3) 70%)",
-        }}
       >
         {particles.map((particle) => (
           <div
             key={particle.id}
-            className="particle absolute"
-            style={{
-              left: "50%",
-              top: "50%",
-              width: "8px",
-              height: "8px",
-              background: `hsl(${200 + random(-50, 50)}, 70%, ${50 + random(-20, 30)}%)`,
-              boxShadow: `0 0 ${random(10, 20)}px currentColor`,
-              filter: "blur(0.5px)",
-            }}
-          />
+            className={cn(
+              `particle absolute  via-cyan-200 bg-teal-100 rounded-[2.5px]`,
+              {
+                hidden: !_shouldAnimate || Math.abs(particle.y) === 0,
+                // "hidden": Math.abs(particle.x) <= 4,
+                "bg-pink-400": Math.abs(particle.x) <= 2,
+                "bg-yellow-100 z-10": Math.abs(particle.x) <= 8,
+                "bg-lime-200": Math.abs(particle.x) >= 4,
+                " size-2": shouldAnimate,
+              },
+              "flex items-center justify-center",
+            )}
+          >
+            <div
+              className={cn(
+                `inner relative z-20 blur-sm rounded-[${particle.x}px]`,
+                {
+                  "bg-white": Math.abs(particle.x) <= 7,
+                  "size-1.5": shouldAnimate,
+                },
+              )}
+            />
+          </div>
         ))}
 
         {/* Center glow effect */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, transparent 50%)",
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none" />
+        <div className="relative z-10">{children}</div>
       </div>
-
-      <div className="mt-8 space-y-4 bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10">
-        <div className="flex items-center space-x-4">
-          <label
-            htmlFor="precision"
-            className="text-white text-sm font-medium min-w-[80px]"
-          >
-            Scale:
+      <div className="medium hidden row mt-4">
+        <fieldset className="controls">
+          <label className="text-white text-sm font-medium mr-4">
+            Speed: {_speed.toFixed(2)}x
           </label>
           <input
-            id="precision"
             type="range"
-            min="1"
-            max="20"
-            step="1"
-            value={precision}
-            onChange={handlePrecisionChange}
-            className="range w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+            min={0.1}
+            max={2}
+            value={_speed}
+            step={0.01}
+            className="range"
+            onChange={(e) => setSpeed(parseFloat(e.target.value))}
           />
-          <span className="text-blue-300 text-sm font-mono min-w-[60px]">
-            {precision}
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <label
-            htmlFor="speed"
-            className="text-white text-sm font-medium min-w-[80px]"
-          >
-            Speed:
-          </label>
-          <input
-            id="speed"
-            type="range"
-            min="0.1"
-            max="3"
-            step="0.1"
-            value={speed}
-            onChange={handleSpeedChange}
-            className="range w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <span className="text-blue-300 text-sm font-mono min-w-[60px]">
-            {speed.toFixed(1)}x
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <label
-            htmlFor="intensity"
-            className="text-white text-sm font-medium min-w-[80px]"
-          >
-            Particles:
-          </label>
-          <input
-            id="intensity"
-            type="range"
-            min="50"
-            max="300"
-            step="10"
-            value={intensity}
-            onChange={handleIntensityChange}
-            className="range w-32 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <span className="text-blue-300 text-sm font-mono min-w-[60px]">
-            {intensity}
-          </span>
-        </div>
+        </fieldset>
       </div>
-
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        .slider::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-          border-radius: 50%;
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        .slider:hover::-webkit-slider-thumb {
-          transform: scale(1.1);
-          box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
-        }
-      `}</style>
     </div>
   );
 };

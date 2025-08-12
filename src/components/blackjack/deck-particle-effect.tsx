@@ -2,6 +2,7 @@
 
 import { FC, useEffect, useRef, useState } from "react";
 import { createTimeline, createAnimatable } from "animejs";
+import { useClientRandom } from "@/lib/hooks/use-client-random";
 
 interface Particle {
   id: number;
@@ -24,25 +25,26 @@ export const DeckParticleEffect: FC<DeckParticleEffectProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [particles, setParticles] = useState<Particle[]>([]);
+  const { random, isClient } = useClientRandom();
 
   // Generate particles when effect becomes active
   useEffect(() => {
-    if (isActive) {
+    if (isActive && isClient) {
       const newParticles: Particle[] = [];
       for (let i = 0; i < intensity; i++) {
         newParticles.push({
           id: i,
-          x: Math.random() * 40 - 20, // Small spread around center
-          y: Math.random() * 40 - 20,
-          delay: Math.random() * 500,
-          direction: Math.random() * 360
+          x: random(-20, 20), // Small spread around center
+          y: random(-20, 20),
+          delay: random(0, 500),
+          direction: random(0, 360)
         });
       }
       setParticles(newParticles);
     } else {
       setParticles([]);
     }
-  }, [isActive, intensity]);
+  }, [isActive, intensity, isClient, random]);
 
   // Animate particles
   useEffect(() => {

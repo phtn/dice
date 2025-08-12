@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef, useCallback } from "react";
+import { FC, useEffect, useRef, useCallback, useState } from "react";
 import { createTimeline, createAnimatable } from "animejs";
 import { GameState, useBlackjackCtx } from "@/ctx/blackjack-ctx";
 
@@ -19,6 +19,11 @@ export const AnimatedCardDealer: FC<AnimatedCardDealerProps> = ({
   const { gameState, playerHands, dealerHand } = useBlackjackCtx();
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<Animation>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const startDealingAnimation = useCallback(() => {
     if (!containerRef.current) return;
@@ -196,16 +201,16 @@ export const AnimatedCardDealer: FC<AnimatedCardDealerProps> = ({
           }
           50% {
             transform: translate(
-                ${Math.random() * 200 - 100}px,
-                ${Math.random() * 200 - 100}px
+                ${isClient ? Math.random() * 200 - 100 : 0}px,
+                ${isClient ? Math.random() * 200 - 100 : 0}px
               )
               scale(0.5);
             opacity: 0.4;
           }
           100% {
             transform: translate(
-                ${Math.random() * 300 - 150}px,
-                ${Math.random() * 300 - 150}px
+                ${isClient ? Math.random() * 300 - 150 : 0}px,
+                ${isClient ? Math.random() * 300 - 150 : 0}px
               )
               scale(0);
             opacity: 0;
