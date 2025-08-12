@@ -42,7 +42,7 @@ export const InfoCard = ({ toggleActiveOption }: Props) => {
         <TabsTrigger value="rules">Game Rules</TabsTrigger>
       </TabsList>
 
-      <CardContent className="space-y-6 lg:px-2 rounded-xl">
+      <CardContent className="space-y-6 lg:px-2 rounded-lg">
         <TabsContent value="stats">
           <GameStatsSection stats={historyStats} />
           <RecentGamesSection

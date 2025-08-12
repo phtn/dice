@@ -316,7 +316,7 @@ export const GameplayCard = () => {
             size="xl"
             onClick={stand}
             disabled={!canStand}
-            className="bg-red-400 hover:bg-zinc-900 text-white tracking-tighter text-base font-semibold px-3.5 rounded-lg grow-0"
+            className="bg-red-400 hover:bg-red-500 text-white tracking-tighter text-base font-semibold px-3.5 rounded-lg grow-0"
           >
             <Icon solid name="stand" className="size-6" />
           </Button>
@@ -788,11 +788,11 @@ export const GameplayCard = () => {
                             )}
                         </span>
 
-                        {hand.isBlackjack && (
+                        {/*{hand.isBlackjack && (
                           <span className="text-orange-200 text-sm bg-zinc-900 rounded-full p-1.5 aspect-square border-3 border-orange-100/80">
                             <Icon name="blackjack" className="size-8" />
                           </span>
-                        )}
+                        )}*/}
                         {hand.isBust && (
                           <span className="bg-red-500 ml-2 px-1 flex items-center space-x-0.5 font-bold tracking-tighter rounded-md text-base">
                             <Icon name="bust" className="size-5" />{" "}
@@ -812,8 +812,8 @@ export const GameplayCard = () => {
                           }`}
                         >
                           {hand.result === "player-blackjack" ? (
-                            <span className="text-orange-200 text-base bg-zinc-900 rounded-full p-1.5 aspect-square border-3 border-orange-100/80">
-                              <Icon name="blackjack" className="size-8" />
+                            <span className="text-orange-200 text-base bg-zinc-900 rounded-full p-1 aspect-square border-2 border-orange-100/70">
+                              <Icon name="blackjack" className="size-6" />
                             </span>
                           ) : hand.result === "player-wins" ? (
                             <Icon name="win-coin" className="size-6" />

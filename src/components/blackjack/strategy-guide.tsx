@@ -27,7 +27,7 @@ interface StrategyGuideProps {
 type CardCategory = "hard" | "soft" | "pairs" | "advanced";
 type Confidence = "high" | "medium" | "low";
 
-interface BaseStrategy {
+export interface BaseStrategy {
   action: string;
   description: string;
   confidence: Confidence;
@@ -35,7 +35,7 @@ interface BaseStrategy {
   deviation?: string;
 }
 
-interface AdvancedStrategy extends BaseStrategy {
+export interface AdvancedStrategy extends BaseStrategy {
   reason: string;
   countInfluence: "positive" | "negative" | "neutral";
   deviation?: string;
@@ -554,8 +554,10 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({
   // Use props if provided, otherwise use context data
   const playerHand = propPlayerHand || playerHands[activeHandIndex];
   const dealerUpCard = propDealerUpCard || dealerHand.cards[0];
-  const remainingCardsByRank = propRemainingCardsByRank || getRemainingCardsByRank();
-  const canDoubleDown = propCanDoubleDown !== undefined ? propCanDoubleDown : ctxCanDoubleDown;
+  const remainingCardsByRank =
+    propRemainingCardsByRank || getRemainingCardsByRank();
+  const canDoubleDown =
+    propCanDoubleDown !== undefined ? propCanDoubleDown : ctxCanDoubleDown;
   const canSplit = propCanSplit !== undefined ? propCanSplit : ctxCanSplit;
 
   // Strategy data based on your matrix
@@ -755,7 +757,7 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({
   // }
 
   return (
-    <CardComp className="bg-neutral-900/95 border-neutral-700 backdrop-blur-sm">
+    <CardComp className="bg-zinc-900/80 border-zinc-800 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
@@ -777,7 +779,7 @@ export const StrategyGuide: FC<StrategyGuideProps> = ({
             { key: "hard", label: "Hard Totals" },
             { key: "soft", label: "Soft Totals" },
             { key: "pairs", label: "Pair Splitting" },
-            { key: "advanced", label: "Advanced Strategy" },
+            { key: "advanced", label: "Advanced" },
           ].map((tab) => (
             <Button
               key={tab.key}
