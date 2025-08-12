@@ -63,6 +63,11 @@ export const GameplayCard = () => {
   const { balance, resetBalance } = useAccountCtx();
 
   const [lastBetAmount, setLastBetAmount] = useState(0);
+  const [lastSlotBets, setLastSlotBets] = useState<{ [key: number]: number }>({
+    0: 0,
+    1: 0,
+    2: 0,
+  });
   const [betHistory, setBetHistory] = useState<number[]>([]);
   const [activeSlot, setActiveSlot] = useState<number>(0);
   const [slotBets, setSlotBets] = useState<{ [key: number]: number }>({
@@ -70,6 +75,7 @@ export const GameplayCard = () => {
     1: 0,
     2: 0,
   });
+  const [multiSlotMode, setMultiSlotMode] = useState(false);
 
   const baseStrategy = useMemo(
     () =>
@@ -97,6 +103,7 @@ export const GameplayCard = () => {
       setBetHistory([]);
       setSlotBets({ 0: 0, 1: 0, 2: 0 });
       setActiveSlot(0);
+      setMultiSlotMode(false);
     }
   }, [gameState, betAmount]);
 
@@ -125,6 +132,7 @@ export const GameplayCard = () => {
   // Save the bet amount when starting a new game
   const handleStartNewGame = useCallback(() => {
     setLastBetAmount(betAmount);
+    setLastSlotBets({ ...slotBets });
     // Pass slot bets to context
     const activeBets = Object.fromEntries(
       Object.entries(slotBets).filter(([, bet]) => bet > 0),
@@ -134,11 +142,16 @@ export const GameplayCard = () => {
 
   const handleReplay = useCallback(() => {
     if (lastBetAmount > 0 && (balance?.amount || 0) >= lastBetAmount) {
-      setBetAmount(lastBetAmount);
-      // Reconstruct bet history for re-bet (simplified as single amount)
+      setSlotBets({ ...lastSlotBets });
+      // Enable multi-slot mode for adding to all active slots
+      const activeSlots = Object.entries(lastSlotBets).filter(
+        ([, bet]) => bet > 0,
+      );
+      setMultiSlotMode(activeSlots.length > 1);
+      // Reconstruct bet history with total amount
       setBetHistory([lastBetAmount]);
     }
-  }, [balance?.amount, lastBetAmount, setBetAmount]);
+  }, [balance?.amount, lastBetAmount, lastSlotBets]);
   const getResultMessage = useCallback(() => {
     switch (gameResult) {
       case "player-blackjack":
@@ -205,12 +218,37 @@ export const GameplayCard = () => {
                   (sum, bet) => sum + bet,
                   0,
                 );
-                if ((balance?.amount ?? 0) >= totalCurrentBet + chipValue) {
-                  setSlotBets((prev) => ({
-                    ...prev,
-                    [activeSlot]: prev[activeSlot] + chipValue,
-                  }));
-                  setBetHistory((prev: number[]) => [...prev, chipValue]);
+
+                if (multiSlotMode) {
+                  // Add to all slots that had bets in the previous game
+                  const activeSlots = Object.entries(lastSlotBets)
+                    .filter(([, bet]) => bet > 0)
+                    .map(([slot]) => parseInt(slot));
+
+                  const totalChipCost = chipValue * activeSlots.length;
+
+                  if (
+                    (balance?.amount ?? 0) >=
+                    totalCurrentBet + totalChipCost
+                  ) {
+                    setSlotBets((prev) => {
+                      const newBets = { ...prev };
+                      activeSlots.forEach((slot) => {
+                        newBets[slot] = prev[slot] + chipValue;
+                      });
+                      return newBets;
+                    });
+                    setBetHistory((prev: number[]) => [...prev, totalChipCost]);
+                  }
+                } else {
+                  // Normal single slot mode
+                  if ((balance?.amount ?? 0) >= totalCurrentBet + chipValue) {
+                    setSlotBets((prev) => ({
+                      ...prev,
+                      [activeSlot]: prev[activeSlot] + chipValue,
+                    }));
+                    setBetHistory((prev: number[]) => [...prev, chipValue]);
+                  }
                 }
               }}
               className="disabled:opacity-50 cursor-not-allowed"
@@ -227,7 +265,14 @@ export const GameplayCard = () => {
         })}
       </motion.div>
     );
-  }, [balance?.amount, gameState, slotBets, activeSlot]); /// eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    balance?.amount,
+    gameState,
+    slotBets,
+    activeSlot,
+    multiSlotMode,
+    lastSlotBets,
+  ]); /// eslint-disable-line react-hooks/exhaustive-deps
 
   const PlayerActions = useCallback(() => {
     const options = opts(
@@ -442,10 +487,12 @@ export const GameplayCard = () => {
   );
 
   const QuickBetOptions = useCallback(() => {
+    const hasLastBets = Object.values(lastSlotBets).some((bet) => bet > 0);
+
     const options = opts(
       <Button
         onClick={handleReplay}
-        disabled={(balance?.amount || 0) < lastBetAmount}
+        disabled={(balance?.amount || 0) < lastBetAmount || !hasLastBets}
         variant="outline"
         className={cn(
           "flex justify-center items-center absolute h-12 w-8 flex-shrink aspect-square bottom-8 rounded-full border border-yellow-200/80 bg-neutral-900/30 text-yellow-200 hover:bg-neutral-700",
@@ -497,7 +544,7 @@ export const GameplayCard = () => {
       <>
         {options.get(
           betAmount === 0 &&
-            lastBetAmount > 0 &&
+            hasLastBets &&
             gameState === "betting" &&
             gameResult === null,
         )}
@@ -508,6 +555,7 @@ export const GameplayCard = () => {
     betAmount,
     handleReplay,
     lastBetAmount,
+    lastSlotBets,
     gameResult,
     gameState,
     activeSlot,
@@ -572,13 +620,19 @@ export const GameplayCard = () => {
 
   const PlayerHands = useCallback(({ cards }: { cards: Card[] }) => {
     return (
-      <div className="flex gap-2">
+      <div className="flex -space-x-9 ">
         {cards.map((card, id) => (
-          <PlayingCard key={id} card={card} />
+          <div key={id} className={`mt-${id * 2}`}>
+            <PlayingCard card={card} />
+          </div>
         ))}
       </div>
     );
   }, []);
+
+  const toggleMultiSlotMode = useCallback(() => {
+    setMultiSlotMode(!multiSlotMode);
+  }, [multiSlotMode]);
 
   return (
     <CardComp
@@ -641,7 +695,7 @@ export const GameplayCard = () => {
                   ? "?"
                   : formatHandValue(dealerHand, gameResult)}
               </span>
-              <span>{gameState === "betting" && "Place your bets"}</span>
+
               {dealerHand.isBlackjack && gameState !== "player-turn" && (
                 <span className="text-orange-200 text-sm bg-zinc-900 rounded-full p-1.5 aspect-square border-3 border-orange-100/80">
                   <Icon name="blackjack" className="size-8" />
@@ -661,6 +715,22 @@ export const GameplayCard = () => {
           <div className="absolute bg-zinc-900 rounded-xl justify-center flex w-full left-0 top-0">
             <ResultBanner />
           </div>
+          <span>
+            {gameState === "betting" && !multiSlotMode && "Place your bets"}
+            {gameState === "betting" && multiSlotMode && (
+              <span className="flex items-center gap-2">
+                <span className="text-cyan-300">
+                  Multi-slot mode: Adding to all active slots
+                </span>
+                <button
+                  onClick={toggleMultiSlotMode}
+                  className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white"
+                >
+                  Single Slot
+                </button>
+              </span>
+            )}
+          </span>
           <div className="min-h-56 w-full grid grid-cols-12">
             {playerHands.map((hand, handIndex) => (
               <div
