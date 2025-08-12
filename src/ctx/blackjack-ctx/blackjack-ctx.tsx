@@ -40,6 +40,8 @@ interface BlackjackCtxValues {
   // Betting
   betAmount: number;
   setBetAmount: Dispatch<SetStateAction<number>>;
+  totalWinAmount: number;
+  netWinnings: number;
 
   // Game actions
   startNewGame: (slotBets?: { [key: number]: number }) => void;
@@ -77,7 +79,7 @@ interface BlackjackCtxValues {
   getCardDisplay: (card: Card) => string;
 
   // Studio integration
-  dealSpecificCard: (card: Card) => void;
+  dealSpecificCard: (card: Card) => Card | null;
 
   // Game History
   getGameHistory: () => GameHistoryEntry[];
@@ -98,8 +100,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
   const [gameState, setGameState] = useState<GameState>("betting");
   const [gameResult, setGameResult] = useState<GameResult>(null);
 
-  // Card dealing counter to trigger shoe updates (currently unused but ready for future enhancements)
-  // const [cardDealCounter, setCardDealCounter] = useState(0);
+  // Card dealing counter to trigger shoe updates
+  const [cardDealCounter, setCardDealCounter] = useState(0);
 
   // Hands
   const [playerHands, setPlayerHands] = useState<PlayerHand[]>([]);
@@ -116,6 +118,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   // Betting
   const [betAmount, setBetAmount] = useState(0);
+  const [totalWinAmount, setTotalWinAmount] = useState(0);
+  const [netWinnings, setNetWinnings] = useState(0);
 
   // Settings
   const [autoReturnToBetting, setAutoReturnToBetting] = useState(true);
@@ -136,14 +140,14 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   const engine = engineRef.current;
 
-  // Wrapper function to track card dealing (currently unused but ready for future enhancements)
-  // const dealCardAndUpdate = useCallback(() => {
-  //   const card = engine.dealCard();
-  //   if (card) {
-  //     setCardDealCounter(prev => prev + 1);
-  //   }
-  //   return card;
-  // }, [engine]);
+  // Wrapper function to track card dealing
+  const dealCardAndUpdate = useCallback((specificCard?: Card) => {
+    const card = engine.dealCard(specificCard);
+    if (card) {
+      setCardDealCounter(prev => prev + 1);
+    }
+    return card;
+  }, [engine]);
 
   const updateStats = useCallback((result: GameResult, winAmount: number) => {
     setStats((prev) => ({
@@ -179,6 +183,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     });
     setActiveHandIndex(0);
     setBetAmount(0);
+    setTotalWinAmount(0);
+    setNetWinnings(0);
   }, []);
 
   const processGameEnd = useCallback(
@@ -291,7 +297,13 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
         }
       });
 
+      // Calculate net winnings (profit only)
+      const totalBetAmount = playerHandsToUse.reduce((sum, hand) => sum + hand.betAmount, 0);
+      const netWinningsAmount = totalWinAmount - totalBetAmount;
+
       setGameResult(overallResult);
+      setTotalWinAmount(totalWinAmount);
+      setNetWinnings(netWinningsAmount);
 
       // Save game to history
       GameHistoryManager.saveGame(
@@ -333,7 +345,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
           engine.shouldDealerHit(currentDealerHand),
         );
         if (engine.shouldDealerHit(currentDealerHand)) {
-          const newCard = engine.dealCard();
+          const newCard = dealCardAndUpdate();
           if (newCard) {
             const newCards = [...currentDealerHand.cards, newCard];
             const newHand = engine.createHand(newCards);
@@ -357,7 +369,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       // Start dealer play after a short delay
       setTimeout(() => playDealerRecursive(dealerHand), 500);
     },
-    [dealerHand, engine, processGameEnd],
+    [dealerHand, engine, processGameEnd, dealCardAndUpdate],
   );
 
   const startNewGame = useCallback(
@@ -366,41 +378,39 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       const betsToUse = slotBets || { 0: betAmount };
       const activeBets = Object.entries(betsToUse).filter(([, bet]) => bet > 0);
 
-      if (activeBets.length === 0 || (balance?.amount ?? 0) < betAmount) {
+      // Calculate total bet amount
+      const totalBetAmount = activeBets.reduce((sum, [, bet]) => sum + bet, 0);
+
+      if (activeBets.length === 0 || (balance?.amount ?? 0) < totalBetAmount) {
         return; // Invalid bet
       }
 
       // Deduct total bet from balance
       const currentBalance = balance?.amount ?? 0;
-      updateBalance?.(currentBalance - betAmount);
+      updateBalance?.(currentBalance - totalBetAmount);
 
       // Deal dealer cards first
       const dealerCards: Card[] = [];
-      const dealerCard1 = engine.dealCard();
-      const dealerCard2 = engine.dealCard();
+      const dealerCard1 = dealCardAndUpdate();
+      const dealerCard2 = dealCardAndUpdate();
       if (dealerCard1) dealerCards.push(dealerCard1);
       if (dealerCard2) dealerCards.push(dealerCard2);
       const newDealerHand = engine.createHand(dealerCards);
 
       // Create player hands for each active slot
       const newPlayerHands: PlayerHand[] = [];
-      let hasBlackjack = false;
 
       activeBets.forEach(([slotIndex, slotBet], handIndex) => {
         const playerCards: Card[] = [];
 
         // Deal two cards for this hand
-        const playerCard1 = engine.dealCard();
-        const playerCard2 = engine.dealCard();
+        const playerCard1 = dealCardAndUpdate();
+        const playerCard2 = dealCardAndUpdate();
 
         if (playerCard1) playerCards.push(playerCard1);
         if (playerCard2) playerCards.push(playerCard2);
 
         const newPlayerHand = engine.createHand(playerCards);
-
-        if (newPlayerHand.isBlackjack) {
-          hasBlackjack = true;
-        }
 
         const playerHand: PlayerHand = {
           id: `slot-${slotIndex}`,
@@ -418,13 +428,28 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       setGameResult(null);
 
       // Check for immediate blackjacks
-      if (hasBlackjack || newDealerHand.isBlackjack) {
+      if (newDealerHand.isBlackjack) {
+        // Dealer blackjack - end game immediately
         processGameEnd(newDealerHand, newPlayerHands);
       } else {
-        setGameState("player-turn");
+        // Check if ALL player hands have blackjack
+        const allHandsBlackjack = newPlayerHands.every(hand => hand.isBlackjack);
+
+        if (allHandsBlackjack) {
+          // All player hands have blackjack, dealer doesn't - end game
+          processGameEnd(newDealerHand, newPlayerHands);
+        } else {
+          // Some hands need to be played - start player turn
+          // Find first non-blackjack hand to be active
+          const firstPlayableIndex = newPlayerHands.findIndex(hand => !hand.isBlackjack);
+          if (firstPlayableIndex !== -1) {
+            setActiveHandIndex(firstPlayableIndex);
+          }
+          setGameState("player-turn");
+        }
       }
     },
-    [betAmount, balance?.amount, updateBalance, engine, processGameEnd],
+    [betAmount, balance?.amount, updateBalance, engine, processGameEnd, dealCardAndUpdate],
   );
 
   const findNextPlayableHand = useCallback(
@@ -446,6 +471,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     return hands.every((hand) => hand.isBust);
   }, []);
 
+
+
   const moveToNextHand = useCallback(
     (currentHands?: PlayerHand[]) => {
       const handsToUse = currentHands || playerHands;
@@ -457,7 +484,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       if (nextPlayableIndex !== -1) {
         setActiveHandIndex(nextPlayableIndex);
       } else {
-        // Check if all hands are busted - if so, skip dealer play
+        // Check if all hands are finished (busted or blackjack) - if so, skip dealer play if all busted
         if (checkIfAllHandsBusted(handsToUse)) {
           processGameEnd(undefined, handsToUse);
         } else {
@@ -506,7 +533,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     if (gameState !== "player-turn" || activeHandIndex >= playerHands.length)
       return;
 
-    const newCard = engine.dealCard();
+    const newCard = dealCardAndUpdate();
     if (!newCard) return;
 
     const currentHand = playerHands[activeHandIndex];
@@ -525,7 +552,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       // Add delay to show the busting card before proceeding
       setTimeout(() => handlePostBust(updatedHands), 1000);
     }
-  }, [gameState, activeHandIndex, playerHands, engine, handlePostBust]);
+  }, [gameState, activeHandIndex, playerHands, engine, handlePostBust, dealCardAndUpdate]);
 
   const stand = useCallback(() => {
     if (gameState !== "player-turn") return;
@@ -545,7 +572,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     updateBalance?.(currentBalance - currentHand.betAmount);
 
     // Hit once and then stand
-    const newCard = engine.dealCard();
+    const newCard = dealCardAndUpdate();
     if (!newCard) return;
 
     const newCards = [...currentHand.cards, newCard];
@@ -576,6 +603,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     engine,
     moveToNextHand,
     handlePostBust,
+    dealCardAndUpdate,
   ]);
 
   const split = useCallback(() => {
@@ -594,8 +622,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     const { hand1, hand2 } = engine.splitHand(currentHand);
 
     // Deal one card to each split hand
-    const card1 = engine.dealCard();
-    const card2 = engine.dealCard();
+    const card1 = dealCardAndUpdate();
+    const card2 = dealCardAndUpdate();
 
     if (!card1 || !card2) return;
 
@@ -642,6 +670,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     engine,
     dealerPlay,
     findNextPlayableHand,
+    dealCardAndUpdate,
   ]);
 
   const resetGame = useCallback(() => {
@@ -701,7 +730,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   const remainingCards = useMemo(
     () => engine.getRemainingCards(),
-    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+    [engine, playerHands, dealerHand, cardDealCounter], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const totalCards = useMemo(
     () => engine.getTotalCards(),
@@ -710,7 +739,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   const usedCards = useMemo(
     () => engine.getUsedCards(),
-    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+    [engine, playerHands, dealerHand, cardDealCounter], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const setDeckCount = useCallback(
@@ -731,12 +760,12 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
 
   const getRemainingCardsByRank = useCallback(
     () => engine.getRemainingCardsByRank(),
-    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+    [engine, playerHands, dealerHand, cardDealCounter], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const getUsedCardsByRank = useCallback(
     () => engine.getUsedCardsByRank(),
-    [engine, playerHands, dealerHand], // eslint-disable-line react-hooks/exhaustive-deps
+    [engine, playerHands, dealerHand, cardDealCounter], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const getCardDisplay = useCallback(
@@ -747,11 +776,13 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
   // Deal a specific card (for studio use)
   const dealSpecificCard = useCallback(
     (card: Card) => {
-      if (gameState === "betting") {
-        engine.dealCard(card);
+      const dealtCard = engine.dealCard(card);
+      if (dealtCard) {
+        setCardDealCounter(prev => prev + 1);
       }
+      return dealtCard;
     },
-    [engine, gameState],
+    [engine],
   );
 
   // Game History methods
@@ -779,6 +810,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       activeHandIndex,
       betAmount,
       setBetAmount,
+      totalWinAmount,
+      netWinnings,
       startNewGame,
       hit,
       stand,
@@ -816,6 +849,8 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       dealerHand,
       activeHandIndex,
       betAmount,
+      totalWinAmount,
+      netWinnings,
       startNewGame,
       hit,
       stand,

@@ -1,22 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MinusIcon, PlusIcon } from "lucide-react"
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 export default function Component() {
-  const minValue = 0
-  const maxValue = 200
-  const steps = 5
-  const [value, setValue] = useState([100])
+  const minValue = 0;
+  const maxValue = 200;
+  const steps = 5;
+  const [value, setValue] = useState([100]);
 
   const decreaseValue = () =>
-    setValue((prev) => [Math.max(minValue, prev[0] - steps)])
+    setValue((prev) => [Math.max(minValue, prev[0] - steps)]);
   const increaseValue = () =>
-    setValue((prev) => [Math.min(maxValue, prev[0] + steps)])
+    setValue((prev) => [Math.min(maxValue, prev[0] + steps)]);
 
   return (
     <div className="*:not-first:mt-3">
@@ -31,7 +30,7 @@ export default function Component() {
             onClick={decreaseValue}
             disabled={value[0] === 0}
           >
-            <MinusIcon size={16} aria-hidden="true" />
+            -
           </Button>
         </div>
         <Slider
@@ -52,10 +51,10 @@ export default function Component() {
             onClick={increaseValue}
             disabled={value[0] === 200}
           >
-            <PlusIcon size={16} aria-hidden="true" />
+            +
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

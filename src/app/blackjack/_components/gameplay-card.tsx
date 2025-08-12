@@ -46,6 +46,7 @@ export const GameplayCard = () => {
     activeHandIndex,
     betAmount,
     setBetAmount,
+    netWinnings,
     startNewGame,
     hit,
     stand,
@@ -344,7 +345,7 @@ export const GameplayCard = () => {
   const ResultBanner = useCallback(() => {
     const options = opts(
       <div className="h-20 overflow-hidden flex items-center justify-center space-x-4">
-        <div className="w-40 h-20"></div>
+        <div className="w-56 h-20"></div>
         <div className="relative flex flex-col items-center space-y-1">
           <Burst
             shouldAnimate={
@@ -352,6 +353,7 @@ export const GameplayCard = () => {
             }
             duration={1500}
             speed={120}
+            count={100}
           >
             <motion.div
               initial={{ scale: 0, y: -35 }}
@@ -363,7 +365,7 @@ export const GameplayCard = () => {
                 delay: 0.1,
               }}
               className={cn(
-                "text-2xl h-20 w-44 flex items-center justify-center tracking-tight font-bold text-emerald-100",
+                "text-2xl h-20 w-72 flex items-center justify-center tracking-tight font-bold text-emerald-100",
                 {
                   "text-sky-400": gameResult === "push",
                   "text-orange-200": gameResult === "player-blackjack",
@@ -391,14 +393,30 @@ export const GameplayCard = () => {
           </motion.button>
         </div>
 
-        <div className="w-40 h-20 border flex items-center justify-center">
-          {betAmount}
+        <div className="w-40 h-20 flex flex-col items-center justify-center">
+          <div
+            className={cn("text-lg font-bold", {
+              "text-emerald-300": netWinnings > 0,
+              "text-red-300": netWinnings < 0,
+              "text-neutral-300": netWinnings === 0,
+            })}
+          >
+            {netWinnings >= 0 ? "+" : ""}
+            {netWinnings.toLocaleString()}
+          </div>
+          <div className="text-xs text-neutral-400">
+            {netWinnings > 0
+              ? "Profit"
+              : netWinnings < 0
+                ? "Loss"
+                : "Break Even "}
+          </div>
         </div>
       </div>,
       null,
     );
     return <>{options.get(gameResult !== null)}</>;
-  }, [gameResult, getResultMessage, startNewBet, betAmount]);
+  }, [gameResult, getResultMessage, startNewBet, netWinnings]);
 
   const BettingSlot = useCallback(
     ({ slotIndex }: { slotIndex: number }) => {
@@ -513,25 +531,54 @@ export const GameplayCard = () => {
         <Button
           size="lg"
           onClick={() => {
-            const currentSlotBet = slotBets[activeSlot];
-            const totalCurrentBet = Object.values(slotBets).reduce(
-              (sum, bet) => sum + bet,
-              0,
-            );
-            if (
-              currentSlotBet > 0 &&
-              (balance?.amount || 0) >= totalCurrentBet + currentSlotBet
-            ) {
-              setSlotBets((prev) => ({
-                ...prev,
-                [activeSlot]: prev[activeSlot] * 2,
-              }));
-              setBetHistory((prev: number[]) => [...prev, currentSlotBet]);
+            if (multiSlotMode) {
+              // Double all slots that have bets
+              const activeSlots = Object.entries(slotBets)
+                .filter(([, bet]) => bet > 0)
+                .map(([slot]) => parseInt(slot));
+
+              const totalCurrentBet = Object.values(slotBets).reduce(
+                (sum, bet) => sum + bet,
+                0,
+              );
+
+              if (
+                activeSlots.length > 0 &&
+                (balance?.amount || 0) >= totalCurrentBet * 2
+              ) {
+                setSlotBets((prev) => {
+                  const newBets = { ...prev };
+                  activeSlots.forEach((slot) => {
+                    newBets[slot] = prev[slot] * 2;
+                  });
+                  return newBets;
+                });
+                setBetHistory((prev: number[]) => [...prev, totalCurrentBet]);
+              }
+            } else {
+              // Single slot mode - double only active slot
+              const currentSlotBet = slotBets[activeSlot];
+              const totalCurrentBet = Object.values(slotBets).reduce(
+                (sum, bet) => sum + bet,
+                0,
+              );
+              if (
+                currentSlotBet > 0 &&
+                (balance?.amount || 0) >= totalCurrentBet + currentSlotBet
+              ) {
+                setSlotBets((prev) => ({
+                  ...prev,
+                  [activeSlot]: prev[activeSlot] * 2,
+                }));
+                setBetHistory((prev: number[]) => [...prev, currentSlotBet]);
+              }
             }
           }}
           disabled={
-            slotBets[activeSlot] <= 0 ||
-            (balance?.amount || 0) < betAmount + slotBets[activeSlot]
+            multiSlotMode
+              ? betAmount <= 0 || (balance?.amount || 0) < betAmount * 2
+              : slotBets[activeSlot] <= 0 ||
+                (balance?.amount || 0) < betAmount + slotBets[activeSlot]
           }
           variant="outline"
           className="bg-zinc-900 border-transparent text-cyan-200 font-semibold tracking-tighter text-lg rounded-lg px-2.5"
@@ -560,6 +607,7 @@ export const GameplayCard = () => {
     gameState,
     activeSlot,
     slotBets,
+    multiSlotMode,
   ]);
 
   const PlayOptions = useCallback(() => {
@@ -620,7 +668,7 @@ export const GameplayCard = () => {
 
   const PlayerHands = useCallback(({ cards }: { cards: Card[] }) => {
     return (
-      <div className="flex -space-x-9 ">
+      <div className="flex -space-x-10 md:-space-x-9 ">
         {cards.map((card, id) => (
           <div key={id} className={`mt-${id * 2}`}>
             <PlayingCard card={card} />
@@ -648,7 +696,7 @@ export const GameplayCard = () => {
           >
             {autoReturnToBetting ? "Auto" : "Manual"}
           </button>
-          <span>
+          <span className="hidden">
             {gameState} _ {dealerHand?.cards[0]?.value} |{" "}
             {dealerHand?.cards[1]?.value}
           </span>
@@ -677,7 +725,7 @@ export const GameplayCard = () => {
       {/**/}
       <CardContent className="bg-poker-light mx-2 border border-white/10 h-full rounded-[1.75rem]">
         {/* Dealer Hand */}
-        <div className="space-y-0 min-h-1/4 rounded-lg border flex items-center justify-center">
+        <div className="space-y-0 min-h-1/4 rounded-lg flex items-center justify-center">
           <div className="flex gap-3 items-center justify-center">
             <div className="flex gap-2">
               {dealerHand.cards.map((card, index) => (
@@ -719,9 +767,7 @@ export const GameplayCard = () => {
             {gameState === "betting" && !multiSlotMode && "Place your bets"}
             {gameState === "betting" && multiSlotMode && (
               <span className="flex items-center gap-2">
-                <span className="text-cyan-300">
-                  Multi-slot mode: Adding to all active slots
-                </span>
+                <span className="text-cyan-300">Multi-slot Active</span>
                 <button
                   onClick={toggleMultiSlotMode}
                   className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white"
@@ -731,7 +777,7 @@ export const GameplayCard = () => {
               </span>
             )}
           </span>
-          <div className="min-h-56 w-full grid grid-cols-12">
+          <div className="min-h-48 mt-3 w-full grid grid-cols-12">
             {playerHands.map((hand, handIndex) => (
               <div
                 key={hand.id}
@@ -769,8 +815,8 @@ export const GameplayCard = () => {
                           <span className="text-emerald-200 font-medium"></span>
                         )}
                     </div>
-                    <div className="text-white flex items-center font-redhat px-4 text-xl space-x-4">
-                      <div className="flex items-center space-x-3 tracking-tight">
+                    <div className="text-white flex items-center font-redhat px-2 text-xl space-x-4">
+                      <div className="flex items-center space-x-1 tracking-tight">
                         <span className="">
                           {formatHandValue(hand, gameResult)
                             .split(" ")
@@ -788,39 +834,44 @@ export const GameplayCard = () => {
                             )}
                         </span>
 
-                        {/*{hand.isBlackjack && (
-                          <span className="text-orange-200 text-sm bg-zinc-900 rounded-full p-1.5 aspect-square border-3 border-orange-100/80">
-                            <Icon name="blackjack" className="size-8" />
+                        {hand.isBlackjack && (
+                          <span className="ml-2 text-sm bg-zinc-900 rounded-full p-0.5 relative flex items-center justify-center aspect-square border-[1.33px] border-orange-100">
+                            <Icon
+                              name="blackjack"
+                              className="absolute size-6 text-orange-200 blur-xs"
+                            />
+                            <Icon
+                              name="blackjack"
+                              className="size-5 text-orange-50"
+                            />
                           </span>
-                        )}*/}
+                        )}
                         {hand.isBust && (
-                          <span className="bg-red-500 ml-2 px-1 flex items-center space-x-0.5 font-bold tracking-tighter rounded-md text-base">
-                            <Icon name="bust" className="size-5" />{" "}
-                            <span>BUST</span>
+                          <span className="bg-zinc-900 ml-2 flex items-center space-x-0.5 font-bold tracking-tighter rounded-full text-base">
+                            <Icon name="bust" className="size-5" />
                           </span>
                         )}
                       </div>
                       {hand.result && (
                         <span
-                          className={`ml-2 size-6 flex items-center justify-center aspect-square ${
-                            hand.result === "player-wins" ||
+                          className={`size-5 flex items-center justify-center aspect-square ${
                             hand.result === "player-blackjack"
-                              ? "text-white bg-six-nine rounded-full"
-                              : hand.result === "push"
-                                ? "text-white bg-sky-400 rounded-md"
-                                : "text-red-100 bg-red-500 rounded-md"
+                              ? ""
+                              : hand.result === "player-wins"
+                                ? "text-white bg-six-nine rounded-full"
+                                : hand.result === "push"
+                                  ? "text-white bg-sky-400 rounded-sm"
+                                  : "text-red-100 bg-red-700 rounded-sm"
                           }`}
                         >
-                          {hand.result === "player-blackjack" ? (
-                            <span className="text-orange-200 text-base bg-zinc-900 rounded-full p-1 aspect-square border-2 border-orange-100/70">
-                              <Icon name="blackjack" className="size-6" />
-                            </span>
-                          ) : hand.result === "player-wins" ? (
+                          {hand.result === "player-wins" ? (
                             <Icon name="win-coin" className="size-6" />
+                          ) : hand.result === "player-blackjack" ? (
+                            ""
                           ) : hand.result === "push" ? (
                             <Icon name="push" className="size-6" />
                           ) : (
-                            <Icon name="add" className="rotate-45 size-6" />
+                            <Icon name="add" className="rotate-45 size-4" />
                           )}
                         </span>
                       )}
@@ -842,94 +893,13 @@ export const GameplayCard = () => {
           </div>
         </div>
 
+        <div className="font-sans flex space-x-2 tracking-tighter">
+          <span className="text-orange-200">Total bet:</span>
+          <span>{betAmount}</span>
+        </div>
         <BettingControls />
-        {/* Game Actions */}
-
-        {/*<AnimatePresence>*/}
         <PlayerActions />
-        {/*</AnimatePresence>*/}
-
-        {/* Dealer Turn */}
-
-        {/* Game Over Message */}
-
-        {/* Current Bet Display */}
       </CardContent>
     </CardComp>
   );
 };
-
-/*
-{gameState === "dealer-turn" && (
-            <div className=" border-transparent text-center">
-              <div className="text-sm text-neutral-400 font-mono">
-                Payouts...
-              </div>
-            </div>
-          )}
-*/
-
-/*
-{gameState === "game-over" && (
-            <div className="border-transparent text-center">
-              <div className="text-sm text-neutral-400 font-mono">
-                Next game starting in a moment...
-              </div>
-            </div>
-          )}
-*/
-
-/*
-          {betAmount > 0 && gameState !== "betting" && (
-            <div className="_flex hidden absolute bottom-2 items-center gap-4 text-xs border-transparent flex-col">
-              <div className="text-neutral-400 font-mono">
-                Current Bet:{" "}
-                <span className="text-white font-bold">${betAmount}</span>
-              </div>
-              <div className="text-neutral-400 font-mono">
-                Balance:{" "}
-                <span className="text-white font-bold">
-                  ${balance?.amount ?? 0}
-                </span>
-              </div>
-            </div>
-          )}
-
-*/
-
-/*
-<Button
-  size="lg"
-  className={cn(
-    "bg-zinc-900 border-transparent text-orange-500 font-bold tracking-tighter text-lg px-2.5 rounded-xl",
-    // {" ":}
-  )}
-  onClick={() => {
-    const maxBet = Math.min(balance?.amount || 0, 1000); // Cap at 1000 or balance
-    if (maxBet > betAmount) {
-      const addAmount = maxBet - betAmount;
-      setBetAmount(maxBet);
-      setBetHistory((prev: number[]) => [...prev, addAmount]);
-      setSelectedChips((prev: number[]) => [...prev, addAmount]);
-    }
-  }}
-  disabled={
-    betAmount >= (balance?.amount ?? 0) ||
-    (balance?.amount ?? 0) === 0
-  }
-  variant="outline"
->
-  Max
-</Button>
-
-const arcPositions = chipValues.map((_, index) => {
-      const angleDeg = angleStart + index * angleStep;
-      const angleRad = degToRad(angleDeg);
-
-      const x = centerX + radius * Math.cos(angleRad);
-      const y = centerY + radius * Math.sin(angleRad);
-
-      return { x, y };
-    });
-
-*/

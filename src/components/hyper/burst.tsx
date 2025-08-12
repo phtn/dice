@@ -44,7 +44,7 @@ export const Burst = ({
     for (let i = 0; i < count; i++) {
       newParticles.push({
         id: i,
-        x: utils.random(-10, 10, 1),
+        x: utils.random(-12, 12, 1),
         y: utils.random(-3, 3, 2),
         scale: utils.random(0, _shouldAnimate ? 1.5 : 0, 0.0),
         delay: utils.random(0, 1000),
@@ -71,6 +71,7 @@ export const Burst = ({
       // Create timeline for burst effect
       const timeline = createTimeline({
         defaults: { duration },
+        delay: 0,
         loop: false,
         autoplay: _shouldAnimate,
       });
@@ -132,15 +133,15 @@ export const Burst = ({
               {
                 hidden: !_shouldAnimate || Math.abs(particle.y) === 0,
                 // "hidden": Math.abs(particle.x) <= 4,
-                "bg-pink-400": Math.abs(particle.x) <= 2,
+                "bg-pink-100": Math.abs(particle.x) <= 2,
                 "bg-yellow-100 z-10": Math.abs(particle.x) <= 8,
-                "bg-lime-200": Math.abs(particle.x) >= 4,
+                "bg-orange-300": Math.abs(particle.x) >= 4,
                 " size-2": shouldAnimate,
               },
               "flex items-center justify-center",
             )}
           >
-            <div
+            {/*<div
               className={cn(
                 `inner relative z-20 blur-sm rounded-[${particle.x}px]`,
                 {
@@ -148,7 +149,7 @@ export const Burst = ({
                   "size-1.5": shouldAnimate,
                 },
               )}
-            />
+            />*/}
           </div>
         ))}
 

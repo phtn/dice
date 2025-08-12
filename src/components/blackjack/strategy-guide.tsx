@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Card, Hand } from "@/ctx/blackjack-ctx/types";
 import { useBlackjackCtx } from "@/ctx/blackjack-ctx/blackjack-ctx";
+import { Icon } from "@/lib/icons";
 
 interface StrategyGuideProps {
   toggleStudio: VoidFunction;
@@ -25,7 +26,7 @@ interface StrategyGuideProps {
 }
 
 type CardCategory = "hard" | "soft" | "pairs" | "advanced";
-type Confidence = "high" | "medium" | "low";
+export type Confidence = "high" | "medium" | "low";
 
 export interface BaseStrategy {
   action: string;
@@ -131,7 +132,7 @@ export const getAdvancedStrategy = (
     if (playerValue === 9 && dealerValue === 2 && canDoubleDown) {
       return {
         ...baseStrategy,
-        action: "DOUBLE DOWN",
+        action: "DD",
         description: "Double down on 9 vs 2 with high count",
         confidence: "high",
         reason: `High count (+${trueCount.toFixed(1)}) favors doubling`,
@@ -204,7 +205,7 @@ export const getAdvancedStrategy = (
     if (playerValue === 11 && canDoubleDown) {
       return {
         ...baseStrategy,
-        action: "DOUBLE DOWN",
+        action: "DD",
         description: "Double down with high 10-value card concentration",
         confidence: "high",
         reason: `${(tenValueProb * 100).toFixed(1)}% chance of 10-value card`,
@@ -402,7 +403,7 @@ export const getBaseStrategy = (
       case "D":
         return canDoubleDown
           ? {
-              action: "DOUBLE DOWN",
+              action: "DD",
               description: "Double your bet and take exactly one more card",
               confidence,
             }
@@ -414,7 +415,7 @@ export const getBaseStrategy = (
       case "Ds":
         return canDoubleDown
           ? {
-              action: "DOUBLE DOWN",
+              action: "DD",
               description:
                 "Double your bet and take exactly one more card, or stand if you can't double",
               confidence,
@@ -1342,5 +1343,151 @@ export const MatrixNote = () => (
   <div className="text-xs text-neutral-500 bg-neutral-800/50 p-2 rounded">
     <strong>Note:</strong> This basic strategy assumes standard blackjack rules.
     Always consider the specific rules of the game you&apos;re playing.
+  </div>
+);
+
+export const getConfidenceBar = (confidence: Confidence) => {
+  switch (confidence) {
+    case "high":
+      return (
+        <Icon name="high-bars" className="size-3 text-emerald-300" solid />
+      );
+    case "medium":
+      return (
+        <Icon name="medium-bars" className="size-3 text-yellow-400" solid />
+      );
+    default:
+      return <Icon name="low-bars" className="size-3 text-red-400" solid />;
+  }
+};
+
+export interface Strategies {
+  playerHand: Hand;
+  dealerCard: Card;
+  baseStrategy: BaseStrategy;
+  advancedStrategy: AdvancedStrategy;
+}
+
+interface BaseStrategyProps {
+  strategy: BaseStrategy;
+}
+export const BaseStrategyAction = ({ strategy }: BaseStrategyProps) => (
+  <div
+    className={cn(
+      "px-1 bg-zinc-800/80 tracking-tighter text-xs font-bold",
+      strategy.action.includes("HIT")
+        ? "text-emerald-300"
+        : strategy.action.includes("STAND")
+          ? " text-red-300"
+          : strategy.action.includes("DD")
+            ? " text-orange-300"
+            : strategy.action.includes("SPLIT")
+              ? " text-blue-300"
+              : "text-neutral-300",
+    )}
+  >
+    {strategy.action}
+  </div>
+);
+export const BaseStrategyConfidence = ({ strategy }: BaseStrategyProps) => (
+  <div className={cn("bg-zinc-800/60 tracking-tighter text-xs px-1")}>
+    {getConfidenceBar(strategy.confidence)}
+  </div>
+);
+interface AdvancedStrategyProps {
+  strategy: AdvancedStrategy;
+}
+export const AdvancedStrategyAction = ({ strategy }: AdvancedStrategyProps) => (
+  <div
+    className={cn(
+      "px-1 bg-zinc-800/80 tracking-tighter text-xs font-bold",
+      strategy.action.includes("HIT")
+        ? "text-emerald-300"
+        : strategy.action.includes("STAND")
+          ? "text-red-300"
+          : strategy.action.includes("DOUBLE")
+            ? "text-yellow-300"
+            : strategy.action.includes("SPLIT")
+              ? "text-blue-300"
+              : strategy.action.includes("INSURANCE")
+                ? "text-purple-300"
+                : "text-neutral-300",
+    )}
+  >
+    {strategy.action}
+  </div>
+);
+export const AdvancedStrategyConfidence = ({
+  strategy,
+}: AdvancedStrategyProps) => (
+  <div className={cn("bg-zinc-800/60 tracking-tighter text-xs px-1")}>
+    {getConfidenceBar(strategy.confidence)}
+  </div>
+);
+
+interface HandStrategyProps {
+  strategies: Strategies;
+}
+
+export const HandStrategy = ({ strategies }: HandStrategyProps) => (
+  <div className="col-span-4 mt-4 pt-4 border-t border-zinc-600">
+    <div className="grid grid-cols-2 gap-4">
+      {/* Basic Strategy */}
+      <div className="bg-zinc-800/30 rounded-lg p-3">
+        <div className="text-xs font-bold text-neutral-300 mb-2">
+          BASIC STRATEGY
+        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <BaseStrategyAction strategy={strategies.baseStrategy} />
+          <BaseStrategyConfidence strategy={strategies.baseStrategy} />
+        </div>
+        <div className="text-xs text-neutral-400">
+          {strategies.baseStrategy.description}
+        </div>
+      </div>
+
+      {/* Advanced Strategy */}
+      <div className="bg-zinc-800/30 rounded-lg p-3">
+        <div className="text-xs font-bold text-neutral-300 mb-2">
+          ADVANCED STRATEGY
+        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <div
+            className={cn(
+              "text-xs px-1 py-0.5 rounded",
+              strategies.advancedStrategy.countInfluence === "positive"
+                ? "bg-green-500/20 text-green-300"
+                : strategies.advancedStrategy.countInfluence === "negative"
+                  ? "bg-red-500/20 text-red-300"
+                  : "bg-neutral-500/20 text-neutral-300",
+            )}
+          >
+            {strategies.advancedStrategy.countInfluence}
+          </div>
+        </div>
+        <div className="text-xs text-neutral-400 mb-1">
+          {strategies.advancedStrategy.description}
+        </div>
+        {strategies.advancedStrategy.deviation && (
+          <div className="text-xs text-orange-300 bg-orange-500/10 p-1 rounded">
+            <strong>Deviation:</strong> {strategies.advancedStrategy.deviation}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Hand Summary */}
+    <div className="mt-2 text-xs text-neutral-500 bg-zinc-800/20 p-2 rounded">
+      <strong>Hand:</strong>{" "}
+      {strategies.playerHand.cards
+        .map((card) => `${card.rank}${card.suit.charAt(0).toUpperCase()}`)
+        .join(", ")}
+      (
+      {strategies.playerHand.isSoft &&
+      strategies.playerHand.lowValue !== strategies.playerHand.highValue
+        ? `${strategies.playerHand.lowValue}/${strategies.playerHand.highValue} Soft`
+        : `${strategies.playerHand.value} ${strategies.playerHand.isSoft ? "Soft" : "Hard"}`}
+      ) vs Dealer {strategies.dealerCard.rank}
+    </div>
   </div>
 );

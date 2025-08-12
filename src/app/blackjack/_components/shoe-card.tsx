@@ -34,6 +34,31 @@ export const ShoeCard = () => {
   const remainingByRank = getRemainingCardsByRank();
   const usedByRank = getUsedCardsByRank();
 
+  // Calculate Hi-Lo running count
+  const calculateRunningCount = () => {
+    let runningCount = 0;
+
+    // High cards (10, J, Q, K, A) = -1 each when used
+    const highCards = ["10", "J", "Q", "K", "A"];
+    highCards.forEach((rank) => {
+      const usedOfRank = usedByRank[rank] || 0;
+      runningCount -= usedOfRank; // Subtract because high cards are -1
+    });
+
+    // Low cards (2, 3, 4, 5, 6) = +1 each when used
+    const lowCards = ["2", "3", "4", "5", "6"];
+    lowCards.forEach((rank) => {
+      const usedOfRank = usedByRank[rank] || 0;
+      runningCount += usedOfRank; // Add because low cards are +1
+    });
+
+    // Neutral cards (7, 8, 9) = 0, so we don't count them
+
+    return runningCount;
+  };
+
+  const runningCount = calculateRunningCount();
+
   const getCardsByCategory = () => {
     // Group cards by their blackjack significance
     const categories = [
@@ -41,21 +66,25 @@ export const ShoeCard = () => {
         name: "high",
         ranks: ["10", "J", "Q", "K"],
         color: "text-red-200",
+        countValue: -1,
       },
       {
         name: "aces",
         ranks: ["A"],
         color: "text-yellow-200",
+        countValue: -1,
       },
       {
         name: "neutral (7-9)",
         ranks: ["7", "8", "9"],
         color: "text-blue-300",
+        countValue: 0,
       },
       {
         name: "low (2-6)",
         ranks: ["2", "3", "4", "5", "6"],
         color: "text-green-300",
+        countValue: +1,
       },
     ];
 
@@ -101,7 +130,7 @@ export const ShoeCard = () => {
                   className={cn(
                     "text-sm font-bold cursor-pointer bg-neutral-800 border-neutral-800 text-neutral-400 hover:text-neutral-400 hover:bg-neutral-700",
                     {
-                      "bg-six-nine/75 hover:bg-orange-700 text-primary":
+                      "bg-orange-300 hover:bg-orange-200 hover:text-zinc-900 text-zinc-800":
                         deckCount === count,
                     },
                   )}
@@ -116,7 +145,7 @@ export const ShoeCard = () => {
 
       <CardContent className="space-y-6 lg:px-1">
         {/* Shoe Overview */}
-        <div className="grid grid-cols-3 gap-x-2 gap-y-6 w-full">
+        <div className="grid grid-cols-4 gap-x-2 gap-y-6 w-full">
           {/* Total Cards */}
           <StatCard label={"total"} value={totalCards} />
 
@@ -126,6 +155,15 @@ export const ShoeCard = () => {
           {/* Used Cards */}
 
           <StatCard label={"used"} value={usedCards} />
+          <StatCard
+            label={"count"}
+            value={runningCount}
+            className={cn({
+              "text-green-400": runningCount > 0,
+              "text-red-400": runningCount < 0,
+              "text-neutral-400": runningCount === 0,
+            })}
+          />
         </div>
         <div className="space-y-1 py-4">
           {/* Progress Bar */}
@@ -138,9 +176,22 @@ export const ShoeCard = () => {
 
         {/* Card Count by Category */}
         <div className="space-y-8">
-          {cardsByCategory.map(({ name, cards, color }) => (
+          {cardsByCategory.map(({ name, cards, color, countValue }) => (
             <div key={name} className="space-y-1">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div
+                  className={cn(
+                    "text-xs bg-zinc-950 w-6 text-center font-mono px-1 py-0.5 rounded",
+                    {
+                      "text-green-300": countValue > 0,
+                      "text-red-300": countValue < 0,
+                      "text-neutral-300": countValue === 0,
+                    },
+                  )}
+                >
+                  {countValue > 0 ? "+" : ""}
+                  {countValue}
+                </div>
                 <div
                   className={`text-sm tracking-wide font-mono uppercase ${color}`}
                 >
