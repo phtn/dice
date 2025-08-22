@@ -19,6 +19,8 @@ import type { Card, GameResult, Hand } from "@/ctx/blackjack-ctx/types";
 import { opts } from "@/utils/helpers";
 import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
 import { Burst } from "@/components/hyper/burst";
+import { IPlayerAction, PlayerAction } from "./player-actions";
+import { HyperList } from "@/components/hyper/list";
 
 // Helper function to format hand value display
 const formatHandValue = (hand: Hand, gameResult?: GameResult) => {
@@ -275,6 +277,53 @@ export const GameplayCard = () => {
     lastSlotBets,
   ]); /// eslint-disable-line react-hooks/exhaustive-deps
 
+  const player_actions = useMemo(
+    () =>
+      [
+        {
+          name: "Double Down",
+          label: "x2",
+          actionFn: doubleDown,
+          disabled: !canHit && gameState !== "player-turn",
+          style: "bg-double border-double",
+        },
+        {
+          name: "Hit",
+          actionFn: hit,
+          disabled: !canHit && gameState !== "player-turn",
+          icon: "add",
+          style: "bg-hit border-hit",
+        },
+        {
+          name: "Stand",
+          actionFn: stand,
+          disabled: !canStand && gameState !== "player-turn",
+          icon: "stand",
+          style: "bg-stand border-stand",
+        },
+
+        {
+          name: "Split",
+          actionFn: split,
+          label: "Split",
+          disabled: !canSplit && gameState !== "player-turn",
+          style: "bg-indigo-500 border-indigo-500",
+        },
+      ] as IPlayerAction[],
+    [doubleDown, canHit, gameState, split, canSplit, stand, canStand, hit],
+  );
+
+  const PlayerActionPanel = useCallback(() => {
+    return (
+      <HyperList
+        direction="down"
+        data={player_actions}
+        component={PlayerAction}
+        container="flex items-center justify-center gap-4"
+      />
+    );
+  }, [player_actions]);
+
   const PlayerActions = useCallback(() => {
     const options = opts(
       <div className="space-y-4 pt-4 flex flex-col items-center justify-center">
@@ -285,42 +334,8 @@ export const GameplayCard = () => {
             {baseStrategy.confidence}
           </div>
         )}
-        <div className="flex space-x-4">
-          <Button
-            size="xl"
-            onClick={doubleDown}
-            disabled={!canDoubleDown}
-            className="bg-zinc-900/60 hover:bg-zinc-900 relative text-orange-200 text-xl px-3.5 font-black rounded-lg tracking-tighter"
-          >
-            <span className="absolute blur-xs text-orange-100/60">x2</span>
-            <span className="drop-shadow-xs">x2</span>
-          </Button>
-          <Button
-            size="xl"
-            onClick={hit}
-            disabled={!canHit && gameState !== "player-turn"}
-            className="bg-zinc-900 hover:bg-zinc-900 text-emerald-300 text-base font-bold px-3.5 rounded-lg"
-          >
-            <Icon name="add" className="size-5" />
-          </Button>
-          {canSplit && (
-            <Button
-              size="xl"
-              onClick={split}
-              disabled={gameState !== "player-turn"}
-              className="bg-indigo-600 hover:bg-zinc-900 text-indigo-100 tracking-tighter text-base font-semibold px-3.5 rounded-lg"
-            >
-              SPLIT
-            </Button>
-          )}
-          <Button
-            size="xl"
-            onClick={stand}
-            disabled={!canStand}
-            className="bg-red-400 hover:bg-red-500 text-white tracking-tighter text-base font-semibold px-3.5 rounded-lg grow-0"
-          >
-            <Icon solid name="stand" className="size-6" />
-          </Button>
+        <div className="flex space-x-4 items-end">
+          <PlayerActionPanel />
         </div>
       </div>,
       null,
@@ -328,19 +343,7 @@ export const GameplayCard = () => {
     return (
       <>{options.get(gameState === "player-turn" && gameResult === null)}</>
     );
-  }, [
-    baseStrategy,
-    canDoubleDown,
-    canHit,
-    canSplit,
-    canStand,
-    doubleDown,
-    gameState,
-    hit,
-    split,
-    stand,
-    gameResult,
-  ]);
+  }, [baseStrategy, gameState, gameResult, PlayerActionPanel]);
 
   const ResultBanner = useCallback(() => {
     const options = opts(
@@ -685,7 +688,7 @@ export const GameplayCard = () => {
   return (
     <CardComp
       suppressHydrationWarning
-      className="h-[calc(100vh-64px)] portrait:min-h-[calc(100vh-64px)] space-y-0 lg:col-span-6 bg-poker-dark border-transparent rounded-b-3xl"
+      className="h-[calc(100vh-64px)] portrait:min-h-[calc(90vh)] space-y-0 lg:col-span-6 bg-poker-dark border-transparent rounded-b-3xl"
     >
       <div className="px-2 flex items-center justify-between md:px-4">
         <CardTitle className="text-sm border border-border/20 rounded-sm p-px font-medium text-neutral-300 tracking-wider">
@@ -725,7 +728,7 @@ export const GameplayCard = () => {
       {/**/}
       <CardContent className="bg-poker-light mx-2 border border-white/10 h-full rounded-[1.75rem]">
         {/* Dealer Hand */}
-        <div className="space-y-0 min-h-1/4 rounded-lg flex items-center justify-center">
+        <div className="space-y-0 min-h-1/4 rounded-lg border-2 flex items-center justify-center">
           <div className="flex gap-3 items-center justify-center">
             <div className="flex gap-2">
               {dealerHand.cards.map((card, index) => (
@@ -759,7 +762,7 @@ export const GameplayCard = () => {
         </div>
 
         {/* Player Hands */}
-        <div className="py-0 min-h-1/2 relative flex flex-col items-center justify-center">
+        <div className="py-0 md:min-h-1/2 relative flex flex-col items-center justify-center">
           <div className="absolute bg-zinc-900 rounded-xl justify-center flex w-full left-0 top-0">
             <ResultBanner />
           </div>
@@ -777,7 +780,7 @@ export const GameplayCard = () => {
               </span>
             )}
           </span>
-          <div className="min-h-48 mt-3 w-full grid grid-cols-12">
+          <div className="md:min-h-48 h-40 mt-3 w-full grid grid-cols-12">
             {playerHands.map((hand, handIndex) => (
               <div
                 key={hand.id}
@@ -886,7 +889,11 @@ export const GameplayCard = () => {
               </div>
             ))}
           </div>
-          <div className="h-16 gap-8 col-span-12 grid grid-cols-12 w-full">
+          <div
+            className={cn("h-16 gap-8 col-span-12 grid grid-cols-12 w-full", {
+              " h-8": gameState !== "betting",
+            })}
+          >
             <BettingSlot slotIndex={0} />
             <BettingSlot slotIndex={1} />
             <BettingSlot slotIndex={2} />

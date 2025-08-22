@@ -51,6 +51,10 @@
     --color-chip-e: oklch(0.772 0.179 341.33);
     --color-chip-f: oklch(0.544 0.211 31.25);
     --color-chip-g: oklch(0.652 0.208 144.34);
+    --color-double: oklch(0.668 0.189 33.5);
+    --color-hit: oklch(0.73 0.18 153.7);
+    --color-stand: oklch(0.626 0.246 27.59);
+    --color-split: oklch(0.547 0.153 255.31);
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
