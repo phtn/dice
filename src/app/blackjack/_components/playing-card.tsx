@@ -53,7 +53,7 @@ export const PlayingCard = ({
   return (
     <div
       className={cn(
-        "w-[4.25rem] h-24 bg-white rounded-sm flex flex-col justify-between p-1.5 relative shadow-sm select-none",
+        "w-[4.25rem] h-24 bg-white rounded-sm flex flex-col justify-between px-1 py-0.5 relative shadow-[0px_4px_8px_-2px_rgba(0,_0,_0,_0.2)] select-none",
         className,
       )}
     >

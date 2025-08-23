@@ -49,7 +49,7 @@ export const PlayerAction = ({
           {icon ? <Icon name={icon} className="size-5" /> : (label ?? name)}
         </div>
       </Button>
-      <p className="text-[6px] text-center tracking-tighter uppercase mt-1">
+      <p className="md:text-[6px] text-[7px] text-zinc-200 text-center tracking-tighter uppercase mt-1">
         {name}
       </p>
     </div>

@@ -306,7 +306,8 @@ export const GameplayCard = () => {
           name: "Split",
           actionFn: split,
           label: "Split",
-          disabled: !canSplit && gameState !== "player-turn",
+          disabled: !canSplit || gameState !== "player-turn",
+          icon: "split",
           style: "bg-indigo-500 border-indigo-500",
         },
       ] as IPlayerAction[],
@@ -319,21 +320,14 @@ export const GameplayCard = () => {
         direction="down"
         data={player_actions}
         component={PlayerAction}
-        container="flex items-center justify-center gap-4"
+        container="flex items-center justify-center gap-6"
       />
     );
   }, [player_actions]);
 
   const PlayerActions = useCallback(() => {
     const options = opts(
-      <div className="space-y-4 pt-4 flex flex-col items-center justify-center">
-        {baseStrategy && (
-          <div className="text-sm flex items-center border-b px-6 py-1">
-            {baseStrategy.action}
-            <span className="font-thin opacity-60 px-4">|</span>
-            {baseStrategy.confidence}
-          </div>
-        )}
+      <div className="relative bottom-0 h-20 space-y-4 flex flex-col items-center justify-center">
         <div className="flex space-x-4 items-end">
           <PlayerActionPanel />
         </div>
@@ -343,12 +337,12 @@ export const GameplayCard = () => {
     return (
       <>{options.get(gameState === "player-turn" && gameResult === null)}</>
     );
-  }, [baseStrategy, gameState, gameResult, PlayerActionPanel]);
+  }, [gameState, gameResult, PlayerActionPanel]);
 
   const ResultBanner = useCallback(() => {
     const options = opts(
       <div className="h-20 overflow-hidden flex items-center justify-center space-x-4">
-        <div className="w-56 h-20"></div>
+        {/*<div className="w-56 h-20"></div>*/}
         <div className="relative flex flex-col items-center space-y-1">
           <Burst
             shouldAnimate={
@@ -368,7 +362,7 @@ export const GameplayCard = () => {
                 delay: 0.1,
               }}
               className={cn(
-                "text-2xl h-20 w-72 flex items-center justify-center tracking-tight font-bold text-emerald-100",
+                "text-2xl h-20 w-56 md:w-72 flex items-center justify-center tracking-tight font-bold text-emerald-100",
                 {
                   "text-sky-400": gameResult === "push",
                   "text-orange-200": gameResult === "player-blackjack",
@@ -390,13 +384,13 @@ export const GameplayCard = () => {
               delay: 0.85,
             }}
             onClick={startNewBet}
-            className="absolute z-40 bottom-1.5 tracking-tighter cursor-pointer"
+            className="absolute z-40 bottom-1.5 tracking-tighter cursor-pointer text-zinc-300"
           >
             continue
           </motion.button>
         </div>
 
-        <div className="w-40 h-20 flex flex-col items-center justify-center">
+        <div className="md:w-40 absolute right-4 md:relative w-auto h-20 flex flex-col items-center justify-center">
           <div
             className={cn("text-lg font-bold", {
               "text-emerald-300": netWinnings > 0,
@@ -407,7 +401,7 @@ export const GameplayCard = () => {
             {netWinnings >= 0 ? "+" : ""}
             {netWinnings.toLocaleString()}
           </div>
-          <div className="text-xs text-neutral-400">
+          <div className="text-xs text-neutral-400 tracking-tighter md:tracking-tight whitespace-nowrap">
             {netWinnings > 0
               ? "Profit"
               : netWinnings < 0
@@ -432,7 +426,7 @@ export const GameplayCard = () => {
           whileTap={!isDisabled ? { scale: 0.95 } : {}}
           onClick={() => !isDisabled && setActiveSlot(slotIndex)}
           className={cn(
-            "relative w-fit mx-auto col-span-4 rounded-xl border px-4 py-2 min-w-28 min-h-16 flex flex-col items-center justify-center transition-all",
+            "max-h-12 relative w-fit md:w-full mx-auto col-span-3 md:col-span-4 rounded-xl border md:px-4 py-2 md:min-w-28 min-w-20 min-h-16 flex flex-col items-center justify-center transition-all",
             {
               "border-emerald-50/80 bg-emerald-50/5 cursor-pointer":
                 isActive && !isDisabled,
@@ -521,74 +515,76 @@ export const GameplayCard = () => {
       >
         <Icon solid name="rebet" className={`size-7`} />
       </Button>,
-      <motion.div
-        initial={{ scale: 0, opacity: 0, x: -100 }}
-        animate={{ scale: 1, opacity: 1, x: 20 }}
-        transition={{
-          type: "spring",
-          visualDuration: 0.4,
-          bounce: 0.3,
-        }}
-        className="absolute bottom-8"
-      >
-        <Button
-          size="lg"
-          onClick={() => {
-            if (multiSlotMode) {
-              // Double all slots that have bets
-              const activeSlots = Object.entries(slotBets)
-                .filter(([, bet]) => bet > 0)
-                .map(([slot]) => parseInt(slot));
-
-              const totalCurrentBet = Object.values(slotBets).reduce(
-                (sum, bet) => sum + bet,
-                0,
-              );
-
-              if (
-                activeSlots.length > 0 &&
-                (balance?.amount || 0) >= totalCurrentBet * 2
-              ) {
-                setSlotBets((prev) => {
-                  const newBets = { ...prev };
-                  activeSlots.forEach((slot) => {
-                    newBets[slot] = prev[slot] * 2;
-                  });
-                  return newBets;
-                });
-                setBetHistory((prev: number[]) => [...prev, totalCurrentBet]);
-              }
-            } else {
-              // Single slot mode - double only active slot
-              const currentSlotBet = slotBets[activeSlot];
-              const totalCurrentBet = Object.values(slotBets).reduce(
-                (sum, bet) => sum + bet,
-                0,
-              );
-              if (
-                currentSlotBet > 0 &&
-                (balance?.amount || 0) >= totalCurrentBet + currentSlotBet
-              ) {
-                setSlotBets((prev) => ({
-                  ...prev,
-                  [activeSlot]: prev[activeSlot] * 2,
-                }));
-                setBetHistory((prev: number[]) => [...prev, currentSlotBet]);
-              }
-            }
+      betAmount ? (
+        <motion.div
+          initial={{ scale: 0, opacity: 0, x: -100 }}
+          animate={{ scale: 1, opacity: 1, x: 35 }}
+          transition={{
+            type: "spring",
+            visualDuration: 0.4,
+            bounce: 0.3,
           }}
-          disabled={
-            multiSlotMode
-              ? betAmount <= 0 || (balance?.amount || 0) < betAmount * 2
-              : slotBets[activeSlot] <= 0 ||
-                (balance?.amount || 0) < betAmount + slotBets[activeSlot]
-          }
-          variant="outline"
-          className="bg-zinc-900 border-transparent text-cyan-200 font-semibold tracking-tighter text-lg rounded-lg px-2.5"
+          className="absolute bottom-8"
         >
-          2x
-        </Button>
-      </motion.div>,
+          <Button
+            size="lg"
+            onClick={() => {
+              if (multiSlotMode) {
+                // Double all slots that have bets
+                const activeSlots = Object.entries(slotBets)
+                  .filter(([, bet]) => bet > 0)
+                  .map(([slot]) => parseInt(slot));
+
+                const totalCurrentBet = Object.values(slotBets).reduce(
+                  (sum, bet) => sum + bet,
+                  0,
+                );
+
+                if (
+                  activeSlots.length > 0 &&
+                  (balance?.amount || 0) >= totalCurrentBet * 2
+                ) {
+                  setSlotBets((prev) => {
+                    const newBets = { ...prev };
+                    activeSlots.forEach((slot) => {
+                      newBets[slot] = prev[slot] * 2;
+                    });
+                    return newBets;
+                  });
+                  setBetHistory((prev: number[]) => [...prev, totalCurrentBet]);
+                }
+              } else {
+                // Single slot mode - double only active slot
+                const currentSlotBet = slotBets[activeSlot];
+                const totalCurrentBet = Object.values(slotBets).reduce(
+                  (sum, bet) => sum + bet,
+                  0,
+                );
+                if (
+                  currentSlotBet > 0 &&
+                  (balance?.amount || 0) >= totalCurrentBet + currentSlotBet
+                ) {
+                  setSlotBets((prev) => ({
+                    ...prev,
+                    [activeSlot]: prev[activeSlot] * 2,
+                  }));
+                  setBetHistory((prev: number[]) => [...prev, currentSlotBet]);
+                }
+              }
+            }}
+            disabled={
+              multiSlotMode
+                ? betAmount <= 0 || (balance?.amount || 0) < betAmount * 2
+                : slotBets[activeSlot] <= 0 ||
+                  (balance?.amount || 0) < betAmount + slotBets[activeSlot]
+            }
+            variant="outline"
+            className="bg-zinc-900 border-transparent text-cyan-200 font-semibold tracking-tighter text-lg rounded-lg px-2.5"
+          >
+            2x
+          </Button>
+        </motion.div>
+      ) : null,
     );
     return (
       <>
@@ -671,9 +667,17 @@ export const GameplayCard = () => {
 
   const PlayerHands = useCallback(({ cards }: { cards: Card[] }) => {
     return (
-      <div className="flex -space-x-10 md:-space-x-9 ">
+      <div className="flex -space-x-13 md:-space-x-9 ">
         {cards.map((card, id) => (
-          <div key={id} className={`mt-${id * 2}`}>
+          <div
+            key={id}
+            className={cn(
+              `mt-${id % 2 === 0 && id > 0 ? id * id + 4 : 4} -rotate-3`,
+              {
+                "rotate-3": id > 0,
+              },
+            )}
+          >
             <PlayingCard card={card} />
           </div>
         ))}
@@ -688,22 +692,25 @@ export const GameplayCard = () => {
   return (
     <CardComp
       suppressHydrationWarning
-      className="h-[calc(100vh-64px)] portrait:min-h-[calc(90vh)] space-y-0 lg:col-span-6 bg-poker-dark border-transparent rounded-b-3xl"
+      className="h-[calc(100vh-64px)] portrait:min-h-[calc(90vh)] portrait:overflow-clip space-y-0 lg:col-span-6 bg-poker-dark border-transparent rounded-b-3xl"
     >
       <div className="px-2 flex items-center justify-between md:px-4">
-        <CardTitle className="text-sm border border-border/20 rounded-sm p-px font-medium text-neutral-300 tracking-wider">
-          <span>BL♠CKJ♦CK</span>
-          <button
-            onClick={toggleAutoReturnToBetting}
-            className="px-4 cursor-pointer tracking-tighter text-xs"
-          >
-            {autoReturnToBetting ? "Auto" : "Manual"}
-          </button>
+        <CardTitle className="max-h-10 overflow-hidden text-sm font-medium text-neutral-300 tracking-wider">
+          <div className="max-h-10 flex items-center justify-center relative px-4 w-fit">
+            <Icon name="blackjack" className="size-6 text-orange-300" />
+          </div>
+
           <span className="hidden">
             {gameState} _ {dealerHand?.cards[0]?.value} |{" "}
             {dealerHand?.cards[1]?.value}
           </span>
         </CardTitle>
+        <button
+          onClick={toggleAutoReturnToBetting}
+          className="px-4 cursor-pointer tracking-tighter text-xs text-zinc-200"
+        >
+          {autoReturnToBetting ? "autoplay ON" : "Manual"}
+        </button>
         <CardAction>
           <div className="flex gap-1 items-center">
             <div className="text-sm font-medium text-neutral-300 uppercase tracking-wider">
@@ -728,22 +735,33 @@ export const GameplayCard = () => {
       {/**/}
       <CardContent className="bg-poker-light mx-2 border border-white/10 h-full rounded-[1.75rem]">
         {/* Dealer Hand */}
-        <div className="space-y-0 min-h-1/4 rounded-lg border-2 flex items-center justify-center">
+        <div className="space-y-0 min-h-1/4 rounded-lg flex items-center justify-center">
           <div className="flex gap-3 items-center justify-center">
             <div className="flex gap-2">
               {dealerHand.cards.map((card, index) => (
-                <PlayingCard
+                <div
                   key={index}
-                  card={card}
-                  hidden={gameState === "player-turn" && index === 1}
-                />
+                  className={cn(
+                    `-mb-[${index % 2 === 0 ? index + 2 : index + 3}]`,
+                    {
+                      "-ml-8": index !== 0,
+                    },
+                  )}
+                >
+                  <PlayingCard
+                    card={card}
+                    hidden={gameState === "player-turn" && index === 1}
+                  />
+                </div>
               ))}
             </div>
 
             <div className="text-white flex items-center font-sans space-x-3 text-lg">
-              <span>
+              <span className={cn("font-bold", {})}>
                 {dealerHand && gameState !== "dealer-turn"
-                  ? "?"
+                  ? gameState === "betting"
+                    ? ""
+                    : "?"
                   : formatHandValue(dealerHand, gameResult)}
               </span>
 
@@ -753,9 +771,19 @@ export const GameplayCard = () => {
                 </span>
               )}
               {dealerHand.isBust && (
-                <span className="bg-red-500 flex items-center space-x-0.5 px-1 font-bold tracking-tighter rounded-sm text-base">
-                  <Icon name="bust" className="size-5" /> <span>BUST</span>
-                </span>
+                <motion.span
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    visualDuration: 0.5,
+                    bounce: 0.4,
+                  }}
+                  className="flex items-center space-x-0.5 px-1 font-semibold tracking-tighter text-sm"
+                >
+                  <Icon name="bust" className="size-6 text-zinc-900" />{" "}
+                  <span>BUST</span>
+                </motion.span>
               )}
             </div>
           </div>
@@ -766,7 +794,7 @@ export const GameplayCard = () => {
           <div className="absolute bg-zinc-900 rounded-xl justify-center flex w-full left-0 top-0">
             <ResultBanner />
           </div>
-          <span>
+          <span className="md:h-16 h-4 text-orange-200">
             {gameState === "betting" && !multiSlotMode && "Place your bets"}
             {gameState === "betting" && multiSlotMode && (
               <span className="flex items-center gap-2">
@@ -780,12 +808,19 @@ export const GameplayCard = () => {
               </span>
             )}
           </span>
-          <div className="md:min-h-48 h-40 mt-3 w-full grid grid-cols-12">
+          <div
+            className={cn(
+              "md:min-h-48 min-h-20 md:mt-3 w-full grid grid-cols-12",
+              {
+                "mt-8": gameState !== "betting",
+              },
+            )}
+          >
             {playerHands.map((hand, handIndex) => (
               <div
                 key={hand.id}
                 className={cn(
-                  "mb-4 p-2 border-2 border-transparent rounded-xl col-span-4",
+                  "mb-4 p-1.5 md:border-2 border border-transparent rounded-xl col-span-4",
                   {
                     " border-emerald-300":
                       playerHands.length > 1 &&
@@ -795,7 +830,7 @@ export const GameplayCard = () => {
                 )}
               >
                 {playerHands.length > 1 && (
-                  <div className="text-xs text-neutral-200 h-10 font-redhat text-left flex items-start">
+                  <div className="text-xs text-neutral-200 h-8 font-redhat text-left flex items-start">
                     <div
                       className={cn(
                         "size-4 aspect-square rounded-full font-redhat flex items-center justify-center text-sm font-bold",
@@ -881,8 +916,12 @@ export const GameplayCard = () => {
                     </div>
                   </div>
                 )}
-                <div className="col-span-12">
-                  <div className="flex gap-6 items-center justify-start">
+                <div className="grid grid-cols-12 w-full col-span-12">
+                  <div
+                    className={cn("flex items-center justify-start", {
+                      "col-span-3 scale-70 gap-2": playerHands.length >= 4,
+                    })}
+                  >
                     <PlayerHands cards={hand.cards} />
                   </div>
                 </div>
@@ -890,19 +929,39 @@ export const GameplayCard = () => {
             ))}
           </div>
           <div
-            className={cn("h-16 gap-8 col-span-12 grid grid-cols-12 w-full", {
-              " h-8": gameState !== "betting",
-            })}
+            className={cn(
+              "md:h-32 h-28 md:gap-8 flex items-center justify-between md:grid md:grid-cols-12 w-full md:px-0 px-3",
+              {
+                " h-20": gameState !== "betting",
+              },
+            )}
           >
+            <div className="flex md:hidden" />
             <BettingSlot slotIndex={0} />
             <BettingSlot slotIndex={1} />
             <BettingSlot slotIndex={2} />
+            <div className="flex md:hidden" />
           </div>
         </div>
 
-        <div className="font-sans flex space-x-2 tracking-tighter">
-          <span className="text-orange-200">Total bet:</span>
-          <span>{betAmount}</span>
+        <div className="portrait:h-12 font-sans flex items-center justify-between space-x-2 tracking-tighter">
+          <div className="text-sm">
+            <span className="text-orange-200/80 pr-2">Total bet:</span>
+            <span className="font-mono text-zinc-200">
+              <span className="font-sans pr-px">$</span>
+              <span>{betAmount.toLocaleString()}</span>
+            </span>
+          </div>
+          {baseStrategy && (
+            <div className="text-xs flex items-center px-2 text-zinc-200">
+              <Icon name="lightbulb-on" className="size-4 mr-1" solid />
+              <span className="font-space font-extrabold tracking-normal">
+                {baseStrategy.action}
+              </span>
+              <span className="font-thin opacity-60 px-1">|</span>
+              {baseStrategy.confidence}
+            </div>
+          )}
         </div>
         <BettingControls />
         <PlayerActions />
