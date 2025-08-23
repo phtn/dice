@@ -10,6 +10,7 @@ import { Navbar } from "@/components/nav/nav";
 import { ProvidersCtxProvider } from "@/ctx";
 import { type ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToneCtxProvider } from "@/ctx/tone-ctx";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,7 +60,7 @@ export default function RootLayout({
         >
           <ProvidersCtxProvider>
             <Navbar />
-            {children}
+            <ToneCtxProvider>{children}</ToneCtxProvider>
           </ProvidersCtxProvider>
         </ThemeProvider>
       </body>

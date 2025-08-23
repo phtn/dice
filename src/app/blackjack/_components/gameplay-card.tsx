@@ -610,7 +610,7 @@ export const GameplayCard = () => {
       <div className="px-2 flex items-center justify-between md:px-4">
         <CardTitle className="max-h-10 overflow-hidden text-sm font-medium text-neutral-300 tracking-wider">
           <div className="max-h-10 flex items-center justify-center relative px-4 w-fit">
-            <Icon name="blackjack" className="size-6 text-orange-300" />
+            <Icon solid name="blackjack" className="size-6 text-orange-300" />
           </div>
 
           <span className="hidden">

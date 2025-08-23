@@ -7,6 +7,7 @@ import { AccountCtxProvider } from "./acc-ctx";
 import { BlackjackCtxProvider } from "./blackjack-ctx";
 import WagmiContext from "./wagmi";
 import { StudioCtxProvider } from "./studio";
+import { ToneCtxProvider } from "./tone-ctx";
 
 interface ProvidersProviderProps {
   children: ReactNode;
@@ -27,17 +28,19 @@ const ProvidersCtxProvider = ({ children }: ProvidersProviderProps) => {
   );
   return (
     <ProvidersCtx value={value}>
-      <WagmiContext cookies={""}>
-        <AccountCtxProvider>
-          <RNGCtxProvider>
-            <BetCtxProvider>
-              <BlackjackCtxProvider>
-                <StudioCtxProvider>{children}</StudioCtxProvider>
-              </BlackjackCtxProvider>
-            </BetCtxProvider>
-          </RNGCtxProvider>
-        </AccountCtxProvider>
-      </WagmiContext>
+      <ToneCtxProvider>
+        <WagmiContext cookies={""}>
+          <AccountCtxProvider>
+            <RNGCtxProvider>
+              <BetCtxProvider>
+                <BlackjackCtxProvider>
+                  <StudioCtxProvider>{children}</StudioCtxProvider>
+                </BlackjackCtxProvider>
+              </BetCtxProvider>
+            </RNGCtxProvider>
+          </AccountCtxProvider>
+        </WagmiContext>
+      </ToneCtxProvider>
     </ProvidersCtx>
   );
 };
