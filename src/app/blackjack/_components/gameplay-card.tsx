@@ -1,26 +1,26 @@
 "use client";
 
+import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
+import { Burst } from "@/components/hyper/burst";
+import { HyperList } from "@/components/hyper/list";
+import { Button } from "@/components/ui/button";
 import {
-  Card as CardComp,
   CardAction,
+  Card as CardComp,
   CardContent,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useBlackjackCtx } from "@/ctx/blackjack-ctx";
 import { useAccountCtx } from "@/ctx/acc-ctx";
-import { Chip } from "./chip";
-import { PlayingCard } from "./playing-card";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useBlackjackCtx } from "@/ctx/blackjack-ctx";
+import type { Card, GameResult, Hand } from "@/ctx/blackjack-ctx/types";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
-import type { Card, GameResult, Hand } from "@/ctx/blackjack-ctx/types";
 import { opts } from "@/utils/helpers";
-import { getBaseStrategy } from "@/components/blackjack/strategy-guide";
-import { Burst } from "@/components/hyper/burst";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChipArray } from "./gameplay/chip-array";
 import { IPlayerAction, PlayerAction } from "./player-actions";
-import { HyperList } from "@/components/hyper/list";
+import { PlayingCard } from "./playing-card";
 
 // Helper function to format hand value display
 const formatHandValue = (hand: Hand, gameResult?: GameResult) => {
@@ -171,111 +171,6 @@ export const GameplayCard = () => {
         return "";
     }
   }, [gameResult]);
-
-  // Create a completely static ChipArray that never re-renders
-  const ChipArray = useCallback(() => {
-    const chipValues = [25, 50, 100, 250, 1000];
-    const radius = 15;
-    const angleStart = -Math.PI;
-    const angleEnd = 0;
-    const centerX = 0;
-    const centerY = 0;
-    const angleStep = (angleEnd - angleStart) / (chipValues.length - 1);
-
-    const arcPositions = chipValues.map((_, index) => {
-      const angle = angleStart + index * angleStep;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      return { x, y };
-    });
-
-    return (
-      <motion.div
-        initial="hidden"
-        animate={{
-          transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.25,
-          },
-        }}
-        className="relative bottom-0 border rounded-xl h-48 mx-auto mt-0 w-full flex justify-center items-center"
-      >
-        {chipValues.map((chipValue, i) => {
-          const { x, y } = arcPositions[i];
-          return (
-            <motion.button
-              key={chipValue}
-              initial={{ opacity: 0, x, y: y + 10 }}
-              animate={{ opacity: 1, x, y }}
-              transition={{
-                type: gameState === "betting" && "spring",
-                visualDuration: 0.2,
-                bounce: 0.2,
-                delay: i * 0.12,
-              }}
-              whileTap={{ scale: 0.8 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                const totalCurrentBet = Object.values(slotBets).reduce(
-                  (sum, bet) => sum + bet,
-                  0,
-                );
-
-                if (multiSlotMode) {
-                  // Add to all slots that had bets in the previous game
-                  const activeSlots = Object.entries(lastSlotBets)
-                    .filter(([, bet]) => bet > 0)
-                    .map(([slot]) => parseInt(slot));
-
-                  const totalChipCost = chipValue * activeSlots.length;
-
-                  if (
-                    (balance?.amount ?? 0) >=
-                    totalCurrentBet + totalChipCost
-                  ) {
-                    setSlotBets((prev) => {
-                      const newBets = { ...prev };
-                      activeSlots.forEach((slot) => {
-                        newBets[slot] = prev[slot] + chipValue;
-                      });
-                      return newBets;
-                    });
-                    setBetHistory((prev: number[]) => [...prev, totalChipCost]);
-                  }
-                } else {
-                  // Normal single slot mode
-                  if ((balance?.amount ?? 0) >= totalCurrentBet + chipValue) {
-                    setSlotBets((prev) => ({
-                      ...prev,
-                      [activeSlot]: prev[activeSlot] + chipValue,
-                    }));
-                    setBetHistory((prev: number[]) => [...prev, chipValue]);
-                  }
-                }
-              }}
-              className="disabled:opacity-50 cursor-not-allowed"
-            >
-              <Chip value={chipValue} />
-              {/*<Chip
-                value={chipValue}
-                disabled={(balance?.amount ?? 0) <= chipValue} // Handle disabled state in the click handler
-                onClick={handleChip(chipValue)}
-
-              />*/}
-            </motion.button>
-          );
-        })}
-      </motion.div>
-    );
-  }, [
-    balance?.amount,
-    gameState,
-    slotBets,
-    activeSlot,
-    multiSlotMode,
-    lastSlotBets,
-  ]); /// eslint-disable-line react-hooks/exhaustive-deps
 
   const player_actions = useMemo(
     () =>
@@ -655,7 +550,16 @@ export const GameplayCard = () => {
     const options = opts(
       <div className=" ">
         <div className="relative bottom-0 h-1/4 flex gap-3 justify-center">
-          <ChipArray />
+          <ChipArray
+            balanceAmount={balance?.amount ?? 0}
+            slotBets={slotBets}
+            activeSlot={activeSlot}
+            multiSlotMode={multiSlotMode}
+            lastSlotBets={lastSlotBets}
+            setSlotBets={setSlotBets}
+            setBetHistory={setBetHistory}
+            gameState={gameState}
+          />
           <PlayOptions />
           <QuickBetOptions />
         </div>
@@ -663,7 +567,16 @@ export const GameplayCard = () => {
       null,
     );
     return <>{options.get(gameState === "betting")}</>;
-  }, [ChipArray, PlayOptions, QuickBetOptions, gameState]);
+  }, [
+    PlayOptions,
+    QuickBetOptions,
+    gameState,
+    activeSlot,
+    balance?.amount,
+    lastSlotBets,
+    multiSlotMode,
+    slotBets,
+  ]);
 
   const PlayerHands = useCallback(({ cards }: { cards: Card[] }) => {
     return (

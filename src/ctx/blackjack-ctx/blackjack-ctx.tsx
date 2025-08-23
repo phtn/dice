@@ -544,6 +544,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
     updatedHands[activeHandIndex] = {
       ...currentHand,
       ...newHand,
+      hasHit: true,
     };
 
     setPlayerHands(updatedHands);
@@ -635,13 +636,15 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       ...newHand1,
       betAmount: currentHand.betAmount,
       isActive: true,
+      hasHit: false,
     };
 
     const splitHand2: PlayerHand = {
       id: `${currentHand.id}-2`,
       ...newHand2,
       betAmount: currentHand.betAmount,
-      isActive: true,
+      isActive: false,
+      hasHit: false,
     };
 
     // Replace current hand with split hands
@@ -701,6 +704,7 @@ const BlackjackCtxProvider = ({ children }: BlackjackProviderProps) => {
       gameState === "player-turn" &&
       currentPlayerHand &&
       currentPlayerHand.cards.length === 2 &&
+      !currentPlayerHand.hasHit && // prevent doubling after a hit
       (balance?.amount ?? 0) >= currentPlayerHand.betAmount,
     [gameState, currentPlayerHand, balance?.amount],
   );

@@ -56,8 +56,10 @@ export interface PlayerHand extends Hand {
   betAmount: number;
   isActive: boolean;
   result?: GameResult;
+  hasHit?: boolean; // prevents double down if hand already hit
 }
 
+// Stats for overall game tracking
 export interface GameStats {
   gamesPlayed: number;
   gamesWon: number;
